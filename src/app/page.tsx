@@ -8,7 +8,7 @@ import { PreviewPanel } from "@/components/preview/PreviewPanel";
 import { ExportBar } from "@/components/export/ExportBar";
 import { LayoutControls } from "@/components/editor/LayoutControls";
 import t, { setLocale } from "@/lib/i18n";
-import { TEMPLATE_NAMES } from "@/types";
+import { ACCENT_COLOR_OPTIONS, MAX_FONT_SCALE, MIN_FONT_SCALE, TEMPLATE_NAMES } from "@/types";
 import type { TemplateName } from "@/types";
 
 const AiAssistantPanel = dynamic(
@@ -26,7 +26,17 @@ const WORKSPACE_TABS: { key: WorkspaceTab; labelKey: string; code: string }[] = 
 ];
 
 export default function Home() {
-  const { activeLanguage, setActiveLanguage, template, setTemplate } = useResumeStore();
+  const {
+    activeLanguage,
+    setActiveLanguage,
+    template,
+    setTemplate,
+    fontScale,
+    stepFontScale,
+    resetFontScale,
+    accentColor,
+    setAccentColor,
+  } = useResumeStore();
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("edit");
   const activeTabMeta = WORKSPACE_TABS.find((tab) => tab.key === activeTab) ?? WORKSPACE_TABS[0];
 
@@ -148,9 +158,71 @@ export default function Home() {
               <span className="panel-kicker">Preview canvas</span>
               <h2>{TEMPLATE_NAMES[template][activeLanguage]}</h2>
             </div>
-            <div className="preview-toolbar-meta">
-              <span>A4</span>
-              <span>{activeLanguage === "zh" ? "中文" : "English"}</span>
+            <div className="preview-toolbar-controls">
+              <div
+                className="accent-swatch-picker"
+                role="group"
+                aria-label={activeLanguage === "zh" ? "简历强调色切换" : "Resume accent color"}
+              >
+                <span className="accent-swatch-label">
+                  {activeLanguage === "zh" ? "色调" : "Tone"}
+                </span>
+                {ACCENT_COLOR_OPTIONS.map((opt) => {
+                  const active = accentColor === opt.key;
+                  const label = opt.label[activeLanguage] || opt.label.zh;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setAccentColor(opt.key)}
+                      aria-pressed={active}
+                      aria-label={label}
+                      title={label}
+                      className={`accent-swatch-dot ${active ? "is-active" : ""}`}
+                      style={{ backgroundColor: opt.swatch }}
+                    />
+                  );
+                })}
+              </div>
+              <div
+                className="font-scale-stepper"
+                role="group"
+                aria-label={activeLanguage === "zh" ? "简历字号调节" : "Resume font size"}
+              >
+                <span className="font-scale-label">
+                  {activeLanguage === "zh" ? "字号" : "Font"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => stepFontScale(-1)}
+                  disabled={fontScale <= MIN_FONT_SCALE}
+                  aria-label={activeLanguage === "zh" ? "缩小字号" : "Decrease font size"}
+                  title={activeLanguage === "zh" ? "缩小字号 (-5%)" : "Decrease font size (-5%)"}
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  onClick={resetFontScale}
+                  className="font-scale-value"
+                  title={activeLanguage === "zh" ? "点击重置为默认字号 (100%)" : "Click to reset to default (100%)"}
+                >
+                  {Math.round(fontScale * 100)}%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => stepFontScale(1)}
+                  disabled={fontScale >= MAX_FONT_SCALE}
+                  aria-label={activeLanguage === "zh" ? "放大字号" : "Increase font size"}
+                  title={activeLanguage === "zh" ? "放大字号 (+5%)" : "Increase font size (+5%)"}
+                >
+                  +
+                </button>
+              </div>
+              <div className="preview-toolbar-meta">
+                <span>A4</span>
+                <span>{activeLanguage === "zh" ? "中文" : "English"}</span>
+              </div>
             </div>
           </div>
           <div className="preview-canvas-wrap">

@@ -7,7 +7,7 @@ import { downloadSVG } from "@/lib/export/svg";
 import t from "@/lib/i18n";
 import { ShutdownButton } from "@/components/runtime/ShutdownButton";
 import { normalizeSectionOrder } from "@/lib/resume/sectionOrder";
-import type { ResumeData, TemplateName, SectionKey, SectionEmphasis } from "@/types/resume";
+import type { AccentColor, ResumeData, TemplateName, SectionKey, SectionEmphasis } from "@/types/resume";
 
 interface PrintPayload {
   data: ResumeData;
@@ -15,6 +15,8 @@ interface PrintPayload {
   sectionOrder: SectionKey[];
   emphasis: Partial<Record<SectionKey, SectionEmphasis>>;
   language: "zh" | "en";
+  fontScale?: number;
+  accentColor?: AccentColor;
   createdAt: number;
 }
 
@@ -35,6 +37,8 @@ export function ExportBar() {
       sectionOrder: normalizeSectionOrder(store.sectionOrder),
       emphasis: store.emphasis,
       language: store.activeLanguage,
+      fontScale: store.fontScale,
+      accentColor: store.accentColor,
       createdAt: Date.now(),
     };
     sessionStorage.setItem("resume-export-payload", JSON.stringify(payload));
@@ -54,6 +58,7 @@ export function ExportBar() {
         sectionOrder: normalizeSectionOrder(store.sectionOrder),
         emphasis: store.emphasis,
         language: store.activeLanguage,
+        fontScale: store.fontScale,
         template: store.template,
       });
     } catch (err) {
@@ -144,7 +149,6 @@ export function ExportBar() {
       </div>
 
       <input
-
         ref={fileInputRef}
         type="file"
         accept=".json"

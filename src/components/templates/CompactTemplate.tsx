@@ -1,109 +1,170 @@
 "use client";
 
-import type { BilingualText, ResumeData, SectionKey, SectionEmphasis } from "@/types";
-import { RESUME_TEMPLATE_ROOT_STYLE, RESUME_TOKENS } from "@/lib/templates/designTokens";
+import type { AccentColor, BilingualText, ResumeData, SectionKey, SectionEmphasis } from "@/types";
+import { RESUME_TEMPLATE_ROOT_STYLE } from "@/lib/templates/designTokens";
 import { normalizeSectionOrder } from "@/lib/resume/sectionOrder";
+import {
+  Bullets,
+  EntryHeader,
+  FONT_FAMILY,
+  HonorsGrid,
+  INK,
+  InlineList,
+  NUMERIC,
+  PhotoSlot,
+  SkillsGrid,
+  createTypeScale,
+  displayUrl,
+  educationMeta,
+  emphasizeMetrics,
+  headingTracking,
+  pickText,
+  projectMeta,
+  resolveAccentPalette,
+  sectionLabel,
+} from "./shared";
 
 interface TemplateProps {
   data: ResumeData;
   sectionOrder: SectionKey[];
   emphasis: Partial<Record<SectionKey, SectionEmphasis>>;
   language: "zh" | "en";
+  fontScale?: number;
+  accentColor?: AccentColor;
 }
 
-const TOKENS = RESUME_TOKENS;
-const C = RESUME_TOKENS.colors;
+/**
+ * Compact — high-density single-column layout for information-rich resumes.
+ *
+ * Uses a restrained vertical bar paired with an inline hairline rule to
+ * separate sections cleanly without background banners or vertical waste, pairs 2-column
+ * grids for Honors and Skills, and merges project tech + link metadata onto a single line.
+ *
+ * Photo slot: compact 1-inch ID photo converted to A4 (80×110px).
+ */
 const MAX_COMPACT_HIGHLIGHTS = 3;
+const PAGE = { top: 22, right: 30, bottom: 20, left: 30 };
+const PHOTO = { width: 80, height: 110 };
+const BASE_SPACE = { section: 7, headToBody: 4, entry: 5, line: 1 };
+const COMPACT_LEADING = 1.42;
 
 function getCompactHighlights(highlights: BilingualText[] = []) {
   return highlights.slice(0, MAX_COMPACT_HIGHLIGHTS);
 }
 
-function PhotoSlot({ src, language, width, height }: { src: string; language: "zh" | "en"; width: number; height: number }) {
-  if (src) {
-    return (
-      <div style={{ width: `${width}px`, height: `${height}px`, borderRadius: "2px", overflow: "hidden", flexShrink: 0, border: "1px solid #d1d5db" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      </div>
-    );
-  }
-  return (
-    <div style={{ width: `${width}px`, height: `${height}px`, borderRadius: "2px", flexShrink: 0, border: "1px dashed #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "#9ca3af" }}>
-      {language === "zh" ? "证件照" : "Photo"}
-    </div>
-  );
-}
-
-export function CompactTemplate({ data, sectionOrder, emphasis, language }: TemplateProps) {
-  const getText = (b: { zh: string; en: string } | undefined | null) =>
-    language === "zh" ? (b?.zh || b?.en || "") : (b?.en || b?.zh || "");
-
-  const sectionLabel: Record<SectionKey, string> = {
-    personalInfo: "",
-    education: language === "zh" ? "教育背景" : "Education",
-    researchExperience: language === "zh" ? "科研经历" : "Research",
-    honors: language === "zh" ? "荣誉奖项" : "Honors",
-    experience: language === "zh" ? "实习经历" : "Experience",
-    projects: language === "zh" ? "项目经历" : "Projects",
-    campusActivities: language === "zh" ? "校园经历" : "Campus Activities",
-    skills: language === "zh" ? "技能特长" : "Skills",
+export function CompactTemplate({ data, sectionOrder, emphasis, language, fontScale = 1, accentColor }: TemplateProps) {
+  const t = (b: Parameters<typeof pickText>[0]) => pickText(b, language);
+  const ts = createTypeScale(fontScale);
+  const palette = resolveAccentPalette(accentColor);
+  const SPACE = {
+    section: ts.sp(BASE_SPACE.section),
+    headToBody: ts.sp(BASE_SPACE.headToBody),
+    entry: ts.sp(BASE_SPACE.entry),
+    line: BASE_SPACE.line,
   };
 
-  const renderSectionHeader = (label: string) => (
+  const normalizedSectionOrder = normalizeSectionOrder(sectionOrder);
+  const visibleSections = normalizedSectionOrder.filter(
+    (key) => key === "personalInfo" || emphasis[key] !== "hidden"
+  );
+
+  const bodyText = { fontSize: ts.fs(10.8), color: INK.body, lineHeight: COMPACT_LEADING } as const;
+  const metaText = { fontSize: ts.fs(9.8), color: INK.meta, lineHeight: COMPACT_LEADING } as const;
+  const entryStyle = (last: boolean) => ({ marginBottom: last ? 0 : SPACE.entry });
+
+  const renderSectionHeader = (sectionKey: SectionKey) => (
     <div
       style={{
-        borderLeft: `${TOKENS.line.sectionStrongPx}px solid ${C.accentBlue}`,
-        paddingLeft: "8px",
-        marginTop: `${TOKENS.spacing.sectionTop - 4}px`,
-        marginBottom: "4px",
-        fontSize: `${TOKENS.fontSize.sectionTitle - 2}px`,
+        borderLeft: `3px solid ${palette.accent}`,
+        borderBottom: `1px solid ${palette.rule}`,
+        background: palette.bandBg,
+        padding: "2px 8px",
+        marginTop: SPACE.section,
+        marginBottom: SPACE.headToBody,
+        fontSize: ts.fs(12),
         fontWeight: 700,
-        color: C.text,
-        lineHeight: 1.3,
+        color: palette.accent,
+        letterSpacing: headingTracking(language),
+        textTransform: language === "en" ? "uppercase" : undefined,
+        lineHeight: 1.25,
       }}
     >
-      {label}
+      {sectionLabel(sectionKey, language)}
     </div>
+  );
+
+  const description = (text: string) =>
+    text ? <div style={{ ...bodyText, marginTop: SPACE.line }}>{emphasizeMetrics(text)}</div> : null;
+
+  const bullets = (items: BilingualText[] | undefined) => (
+    <Bullets
+      items={getCompactHighlights(items).map(t)}
+      markerColor={palette.marker}
+      indent={10}
+      fontScale={fontScale}
+      style={{ ...bodyText, marginTop: SPACE.line }}
+    />
   );
 
   const renderPersonalInfo = () => {
     const info = data.personalInfo;
-    const name = getText(info.name);
+    const name = t(info.name);
     if (!name && !info.email) return null;
 
-    const title = getText(info.title);
-
-    const contactParts: string[] = [];
-    if (info.gender) contactParts.push(info.gender);
-    if (info.birthDate) contactParts.push(info.birthDate);
-    if (info.politicalStatus) contactParts.push(info.politicalStatus);
-    if (info.phone) contactParts.push(info.phone);
-    if (info.email) contactParts.push(info.email);
-    if (getText(info.location)) contactParts.push(getText(info.location));
-    if (info.website) contactParts.push(info.website);
+    const title = t(info.title);
+    const contactParts = [
+      info.gender,
+      info.birthDate,
+      info.politicalStatus,
+      info.phone,
+      info.email,
+      t(info.location),
+      info.website ? displayUrl(info.website) : "",
+    ].filter(Boolean);
+    const summary = t(info.summary);
 
     return (
-      <div style={{ marginBottom: "6px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-              <span style={{ fontSize: "18px", fontWeight: 700, color: C.text, lineHeight: 1.3 }}>{name}</span>
-              {title && <span style={{ fontSize: "12px", fontWeight: 400, color: C.textSecondary }}>{title}</span>}
-            </div>
-            {contactParts.length > 0 && (
-              <div style={{ fontSize: "10px", color: C.textSecondary, marginTop: "2px", lineHeight: 1.4 }}>
-                {contactParts.join(" | ")}
-              </div>
-            )}
-            {getText(info.summary) && (
-              <div style={{ fontSize: "10px", fontStyle: "italic", color: C.textMuted, marginTop: "3px", lineHeight: 1.45 }}>
-                {getText(info.summary)}
-              </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 14,
+          paddingBottom: 6,
+          borderBottom: `1px solid ${INK.hairline}`,
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+            <span
+              style={{
+                fontSize: ts.fs(22),
+                fontWeight: 700,
+                color: INK.strong,
+                lineHeight: 1.2,
+                letterSpacing: language === "zh" ? "0.06em" : "0.01em",
+              }}
+            >
+              {name}
+            </span>
+            {title && (
+              <span style={{ fontSize: ts.fs(12), fontWeight: 500, color: palette.subtitle }}>
+                {title}
+              </span>
             )}
           </div>
-          <PhotoSlot src={info.avatarUrl} language={language} width={TOKENS.photo.compact.width} height={TOKENS.photo.compact.height} />
+          {contactParts.length > 0 && (
+            <div style={{ fontSize: ts.fs(10.5), color: INK.body, marginTop: 3, lineHeight: COMPACT_LEADING, ...NUMERIC }}>
+              <InlineList items={contactParts} separator="|" separatorColor={INK.rule} gap={6} />
+            </div>
+          )}
+          {summary && (
+            <div style={{ fontSize: ts.fs(10.5), color: INK.meta, marginTop: 3, lineHeight: COMPACT_LEADING }}>
+              {emphasizeMetrics(summary)}
+            </div>
+          )}
         </div>
+        <PhotoSlot src={info.avatarUrl} lang={language} width={PHOTO.width} height={PHOTO.height} />
       </div>
     );
   };
@@ -111,34 +172,26 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language }: Temp
   const renderEducation = () => {
     if (data.education.length === 0) return null;
     return (
-      <div style={{ marginBottom: "4px" }}>
-        {renderSectionHeader(sectionLabel.education)}
-        {data.education.map((edu) => {
-          const parts: string[] = [];
-          if (getText(edu.school)) parts.push(getText(edu.school));
-          if (getText(edu.degree)) parts.push(getText(edu.degree));
-          if (getText(edu.major)) parts.push(getText(edu.major));
-
+      <div>
+        {renderSectionHeader("education")}
+        {data.education.map((edu, idx) => {
+          const meta = educationMeta(edu, language);
           return (
-            <div key={edu.id} style={{ marginBottom: "4px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontWeight: 600, fontSize: "10.5px", color: C.text }}>
-                  {parts.join(" · ")}
-                </span>
-                <span style={{ fontSize: "10px", color: C.textMuted, flexShrink: 0 }}>{edu.period}</span>
-              </div>
-              {(edu.gpa || (edu.courses && edu.courses.length > 0)) && (
-                <div style={{ fontSize: "10px", color: C.textSecondary, lineHeight: 1.4, marginTop: "1px" }}>
-                  {edu.gpa && <span>GPA: {edu.gpa}</span>}
-                  {edu.gpa && edu.courses && edu.courses.length > 0 && <span> | </span>}
-                  {edu.courses && edu.courses.length > 0 && <span>{language === "zh" ? "核心课程" : "Core"}: {edu.courses.join(", ")}</span>}
+            <div key={edu.id} style={entryStyle(idx === data.education.length - 1)}>
+              <EntryHeader
+                title={t(edu.school)}
+                subtitle={[t(edu.major), t(edu.degree)].filter(Boolean).join(" · ")}
+                date={edu.period}
+                fontScale={fontScale}
+                titleStyle={{ fontSize: ts.fs(11.5) }}
+                subtitleStyle={{ fontSize: ts.fs(11) }}
+              />
+              {meta.length > 0 && (
+                <div style={{ fontSize: ts.fs(10.2), color: INK.body, lineHeight: COMPACT_LEADING, marginTop: SPACE.line }}>
+                  <InlineList items={meta} separator="|" separatorColor={INK.rule} gap={6} />
                 </div>
               )}
-              {getText(edu.description) && (
-                <div style={{ fontSize: "10px", color: C.textSecondary, lineHeight: 1.4, marginTop: "1px" }}>
-                  {getText(edu.description)}
-                </div>
-              )}
+              {description(t(edu.description))}
             </div>
           );
         })}
@@ -149,71 +202,45 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language }: Temp
   const renderResearchExperience = () => {
     if (!data.researchExperience || data.researchExperience.length === 0) return null;
     return (
-      <div style={{ marginBottom: "8px" }}>
-        {renderSectionHeader(sectionLabel.researchExperience)}
-        {data.researchExperience.map((item) => (
-          <div key={item.id} style={{ marginBottom: "4px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontWeight: 600, fontSize: "10.5px", color: C.text }}>
-                {getText(item.project) || getText(item.institution)} · {getText(item.role)}
-              </span>
-              <span style={{ fontSize: "10px", color: C.textMuted, flexShrink: 0 }}>{item.period}</span>
+      <div>
+        {renderSectionHeader("researchExperience")}
+        {data.researchExperience.map((item, idx) => {
+          const title = t(item.project) || t(item.institution);
+          const institution = t(item.project) ? t(item.institution) : "";
+          return (
+            <div key={item.id} style={entryStyle(idx === data.researchExperience.length - 1)}>
+              <EntryHeader
+                title={title}
+                subtitle={[t(item.role), institution].filter(Boolean).join(" · ")}
+                date={item.period}
+                fontScale={fontScale}
+                titleStyle={{ fontSize: ts.fs(11.5) }}
+                subtitleStyle={{ fontSize: ts.fs(11) }}
+              />
+              {description(t(item.description))}
+              {bullets(item.highlights)}
             </div>
-            {getText(item.description) && (
-              <div style={{ fontSize: "10px", color: C.textSecondary, lineHeight: 1.45, marginTop: "1px" }}>
-                {getText(item.description)}
-              </div>
-            )}
-            {getCompactHighlights(item.highlights).length > 0 && (
-              <ul style={{ margin: "1px 0 0 0", paddingLeft: "14px", fontSize: "10.5px", color: C.textSecondary }}>
-                {getCompactHighlights(item.highlights).map((h, i) => (
-                  <li key={i} style={{ lineHeight: 1.45 }}>{getText(h)}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
 
   const renderHonors = () => {
     if (data.honors.length === 0) return null;
-
-    const shortHonors = data.honors.every(
-      (h) => getText(h.title).length <= 12 && !getText(h.description)
-    );
-
     return (
-      <div style={{ marginBottom: "8px" }}>
-        {renderSectionHeader(sectionLabel.honors)}
-        {shortHonors ? (
-          <div style={{ fontSize: "10.5px", color: C.text, lineHeight: 1.5 }}>
-            {data.honors.map((h, i) => {
-              const text = getText(h.title) + (h.level ? `[${h.level}]` : "");
-              return (
-                <span key={h.id}>
-                  {text}
-                  {i < data.honors.length - 1 ? " · " : ""}
-                </span>
-              );
-            })}
-          </div>
-        ) : (
-          data.honors.map((h) => (
-            <div key={h.id} style={{ marginBottom: "2px", fontSize: "10.5px", lineHeight: 1.45 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontWeight: 600, color: C.text }}>
-                  {getText(h.title)}{h.level ? ` [${h.level}]` : ""}
-                </span>
-                {h.period && <span style={{ fontSize: "10px", color: C.textMuted }}>{h.period}</span>}
-              </div>
-              {getText(h.description) && (
-                <div style={{ fontSize: "10px", color: C.textSecondary }}>{getText(h.description)}</div>
-              )}
-            </div>
-          ))
-        )}
+      <div>
+        {renderSectionHeader("honors")}
+        <HonorsGrid
+          honors={data.honors}
+          lang={language}
+          fontSize={10.8}
+          fontScale={fontScale}
+          accentColor={accentColor}
+          lineHeight={COMPACT_LEADING}
+          rowGap={1.5}
+          columnGap={24}
+        />
       </div>
     );
   };
@@ -221,28 +248,20 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language }: Temp
   const renderExperience = () => {
     if (data.experience.length === 0) return null;
     return (
-      <div style={{ marginBottom: "8px" }}>
-        {renderSectionHeader(sectionLabel.experience)}
-        {data.experience.map((exp) => (
-          <div key={exp.id} style={{ marginBottom: "4px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontWeight: 600, fontSize: "10.5px", color: C.text }}>
-                {getText(exp.company)} · {getText(exp.role)}
-              </span>
-              <span style={{ fontSize: "10px", color: C.textMuted, flexShrink: 0 }}>{exp.period}</span>
-            </div>
-            {getText(exp.description) && (
-              <div style={{ fontSize: "10px", color: C.textSecondary, lineHeight: 1.45, marginTop: "1px" }}>
-                {getText(exp.description)}
-              </div>
-            )}
-            {getCompactHighlights(exp.highlights).length > 0 && (
-              <ul style={{ margin: "1px 0 0 0", paddingLeft: "14px", fontSize: "10.5px", color: C.textSecondary }}>
-                {getCompactHighlights(exp.highlights).map((h, i) => (
-                  <li key={i} style={{ lineHeight: 1.45 }}>{getText(h)}</li>
-                ))}
-              </ul>
-            )}
+      <div>
+        {renderSectionHeader("experience")}
+        {data.experience.map((exp, idx) => (
+          <div key={exp.id} style={entryStyle(idx === data.experience.length - 1)}>
+            <EntryHeader
+              title={t(exp.company)}
+              subtitle={t(exp.role)}
+              date={exp.period}
+              fontScale={fontScale}
+              titleStyle={{ fontSize: ts.fs(11.5) }}
+              subtitleStyle={{ fontSize: ts.fs(11) }}
+            />
+            {description(t(exp.description))}
+            {bullets(exp.highlights)}
           </div>
         ))}
       </div>
@@ -252,40 +271,30 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language }: Temp
   const renderProjects = () => {
     if (data.projects.length === 0) return null;
     return (
-      <div style={{ marginBottom: "8px" }}>
-        {renderSectionHeader(sectionLabel.projects)}
-        {data.projects.map((proj) => (
-          <div key={proj.id} style={{ marginBottom: "4px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontWeight: 600, fontSize: "10.5px", color: C.text }}>
-                {getText(proj.name)}{getText(proj.role) ? ` · ${getText(proj.role)}` : ""}
-              </span>
-              <span style={{ fontSize: "10px", color: C.textMuted, flexShrink: 0 }}>{proj.period}</span>
+      <div>
+        {renderSectionHeader("projects")}
+        {data.projects.map((proj, idx) => {
+          const meta = projectMeta(proj);
+          return (
+            <div key={proj.id} style={entryStyle(idx === data.projects.length - 1)}>
+              <EntryHeader
+                title={t(proj.name)}
+                subtitle={t(proj.role)}
+                date={proj.period}
+                fontScale={fontScale}
+                titleStyle={{ fontSize: ts.fs(11.5) }}
+                subtitleStyle={{ fontSize: ts.fs(11) }}
+              />
+              {meta.length > 0 && (
+                <div style={metaText}>
+                  <InlineList items={meta} separator="|" separatorColor={INK.rule} gap={6} />
+                </div>
+              )}
+              {description(t(proj.description))}
+              {bullets(proj.highlights)}
             </div>
-            {proj.tech && proj.tech.length > 0 && (
-              <div style={{ fontSize: "9.5px", color: C.textMuted, lineHeight: 1.4 }}>
-                {language === "zh" ? "技术" : "Tech"}: {proj.tech.join(", ")}
-              </div>
-            )}
-            {proj.link && (
-              <div style={{ fontSize: "9px", color: C.textMuted, marginTop: "1px" }}>
-                {proj.link}
-              </div>
-            )}
-            {getText(proj.description) ? (
-              <div style={{ fontSize: "10.5px", color: C.textSecondary, lineHeight: 1.45 }}>
-                {getText(proj.description)}
-              </div>
-            ) : null}
-            {getCompactHighlights(proj.highlights).length > 0 && (
-              <ul style={{ margin: "1px 0 0 0", paddingLeft: "14px", fontSize: "10.5px", color: C.textSecondary }}>
-                {getCompactHighlights(proj.highlights).map((h, i) => (
-                  <li key={i} style={{ lineHeight: 1.45 }}>{getText(h)}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -293,28 +302,20 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language }: Temp
   const renderCampusActivities = () => {
     if (data.campusActivities.length === 0) return null;
     return (
-      <div style={{ marginBottom: "8px" }}>
-        {renderSectionHeader(sectionLabel.campusActivities)}
-        {data.campusActivities.map((act) => (
-          <div key={act.id} style={{ marginBottom: "4px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontWeight: 600, fontSize: "10.5px", color: C.text }}>
-                {getText(act.organization)} · {getText(act.role)}
-              </span>
-              <span style={{ fontSize: "10px", color: C.textMuted, flexShrink: 0 }}>{act.period}</span>
-            </div>
-            {getText(act.description) && (
-              <div style={{ fontSize: "10.5px", color: C.textSecondary, lineHeight: 1.45 }}>
-                {getText(act.description)}
-              </div>
-            )}
-            {getCompactHighlights(act.highlights).length > 0 ? (
-              <ul style={{ margin: "1px 0 0 0", paddingLeft: "14px", fontSize: "10.5px", color: C.textSecondary }}>
-                {getCompactHighlights(act.highlights).map((h, i) => (
-                  <li key={i} style={{ lineHeight: 1.45 }}>{getText(h)}</li>
-                ))}
-              </ul>
-            ) : null}
+      <div>
+        {renderSectionHeader("campusActivities")}
+        {data.campusActivities.map((act, idx) => (
+          <div key={act.id} style={entryStyle(idx === data.campusActivities.length - 1)}>
+            <EntryHeader
+              title={t(act.organization)}
+              subtitle={t(act.role)}
+              date={act.period}
+              fontScale={fontScale}
+              titleStyle={{ fontSize: ts.fs(11.5) }}
+              subtitleStyle={{ fontSize: ts.fs(11) }}
+            />
+            {description(t(act.description))}
+            {bullets(act.highlights)}
           </div>
         ))}
       </div>
@@ -324,16 +325,18 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language }: Temp
   const renderSkills = () => {
     if (data.skills.length === 0) return null;
     return (
-      <div style={{ marginBottom: "4px" }}>
-        {renderSectionHeader(sectionLabel.skills)}
-        <div style={{ fontSize: "10.5px", color: C.text, lineHeight: 1.6 }}>
-          {data.skills.map((cat) => (
-            <div key={cat.id} style={{ marginBottom: "1px" }}>
-              <span style={{ fontWeight: 600 }}>{getText(cat.category)}</span>
-              <span style={{ color: C.textSecondary }}>: {cat.items.join(", ")}</span>
-            </div>
-          ))}
-        </div>
+      <div>
+        {renderSectionHeader("skills")}
+        <SkillsGrid
+          skills={data.skills}
+          lang={language}
+          fontSize={10.5}
+          fontScale={fontScale}
+          lineHeight={COMPACT_LEADING}
+          rowGap={1.5}
+          columnGap={20}
+          twoColumnMaxEm={31}
+        />
       </div>
     );
   };
@@ -349,19 +352,14 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language }: Temp
     skills: renderSkills,
   };
 
-  const normalizedSectionOrder = normalizeSectionOrder(sectionOrder);
-  const visibleSections = normalizedSectionOrder.filter(
-    (key) => key === "personalInfo" || emphasis[key] !== "hidden"
-  );
-
   return (
     <div
       style={{
         ...RESUME_TEMPLATE_ROOT_STYLE,
-        padding: `${TOKENS.page.padding.compact.top}px ${TOKENS.page.padding.compact.right}px ${TOKENS.page.padding.compact.bottom}px ${TOKENS.page.padding.compact.left}px`,
-        fontFamily: TOKENS.fontFamily,
-        lineHeight: 1.45,
-        color: C.text,
+        padding: `${PAGE.top}px ${PAGE.right}px ${PAGE.bottom}px ${PAGE.left}px`,
+        fontFamily: FONT_FAMILY,
+        lineHeight: COMPACT_LEADING,
+        color: INK.strong,
         background: "#ffffff",
       }}
     >

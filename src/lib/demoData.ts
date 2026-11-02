@@ -26,11 +26,11 @@ export const DEMO_RESUME_DATA: ResumeData = {
       degree: { zh: "工学学士", en: "B.S." },
       major: { zh: "计算机科学与技术", en: "Computer Science & Technology" },
       period: "2020.09 - 2024.06",
-      gpa: "3.82/4.0 (前8%)",
+      gpa: "**3.82/4.0 (前8%)**",
       courses: ["数据结构与算法", "操作系统", "计算机网络", "数据库原理", "软件工程", "机器学习"],
       description: {
-        zh: "主修计算机科学，GPA排名前8%，连续三年获校级奖学金",
-        en: "Majoring in Computer Science, top 8% GPA, awarded university scholarship for three consecutive years",
+        zh: "主修计算机科学，GPA排名**前8%**，连续三年获校级奖学金",
+        en: "Majoring in Computer Science, **top 8%** GPA, awarded university scholarship for three consecutive years",
       },
     },
   ],
@@ -75,8 +75,8 @@ export const DEMO_RESUME_DATA: ResumeData = {
         en: "Developed and optimized the creator platform dashboard module for Douyin",
       },
       highlights: [
-        { zh: "使用 React + TypeScript 重构数据看板，首屏加载速度提升 40%", en: "Rebuilt data dashboard with React + TypeScript, improved first-screen load speed by 40%" },
-        { zh: "封装可复用图表组件库，覆盖 6 种可视化场景，服务 3 个业务线", en: "Built reusable chart component library covering 6 visualization scenarios, serving 3 business lines" },
+        { zh: "使用 React + TypeScript 重构数据看板，首屏加载速度提升 **40%**", en: "Rebuilt data dashboard with React + TypeScript, improved first-screen load speed by **40%**" },
+        { zh: "封装可复用图表组件库，覆盖 **6 种**可视化场景，服务 **3 个**业务线", en: "Built reusable chart component library covering **6** visualization scenarios, serving **3** business lines" },
       ],
     },
   ],
@@ -88,8 +88,8 @@ export const DEMO_RESUME_DATA: ResumeData = {
       tech: ["Next.js", "TypeScript", "Prisma", "PostgreSQL"],
       period: "2022.09 - 2023.01",
       description: {
-        zh: "独立设计开发校园二手物品交易平台，支持商品发布、搜索、即时聊天与交易管理，注册用户超 2000 人",
-        en: "Independently designed and developed a campus second-hand trading platform with item posting, search, real-time chat, and transaction management. Over 2,000 registered users.",
+        zh: "独立设计开发校园二手物品交易平台，支持商品发布、搜索、即时聊天与交易管理，注册用户超 **2000 人**",
+        en: "Independently designed and developed a campus second-hand trading platform with item posting, search, real-time chat, and transaction management. Over **2,000** registered users.",
       },
       highlights: [
         { zh: "实现商品发布、搜索、即时聊天与交易管理核心流程", en: "Implemented core flows for item posting, search, real-time chat, and transaction management" },
@@ -108,7 +108,7 @@ export const DEMO_RESUME_DATA: ResumeData = {
         en: "AI-powered campus recruitment resume builder with bilingual support, multi-template switching, PDF/SVG export, optimized for campus hiring",
       },
       highlights: [
-        { zh: "实现中英双语多模板切换，覆盖经典/现代/简约/紧凑 4 种风格", en: "Implemented bilingual multi-template switching across classic, modern, minimal, and compact styles" },
+        { zh: "实现中英双语多模板切换，覆盖经典/现代/简约/紧凑 **4 种**风格", en: "Implemented bilingual multi-template switching across classic, modern, minimal, and compact styles" },
         { zh: "设计 Zustand 持久化状态管理，支持 JSON 导入导出与一键重置", en: "Designed Zustand persistent state management with JSON import/export and one-click reset" },
       ],
       link: "",
@@ -125,8 +125,8 @@ export const DEMO_RESUME_DATA: ResumeData = {
         en: "Organized campus tech meetups and coding competitions, led tech team to revamp the association website",
       },
       highlights: [
-        { zh: "组织 6 场技术分享，累计参与 400+ 人次", en: "Organized 6 tech talks with 400+ total attendees" },
-        { zh: "主导协会官网从 jQuery 迁移至 React，页面性能提升 60%", en: "Led website migration from jQuery to React, improving page performance by 60%" },
+        { zh: "组织 **6 场**技术分享，累计参与 **400+ 人次**", en: "Organized **6** tech talks with **400+** total attendees" },
+        { zh: "主导协会官网从 jQuery 迁移至 React，页面性能提升 **60%**", en: "Led website migration from jQuery to React, improving page performance by **60%**" },
       ],
     },
     {
@@ -153,7 +153,7 @@ export const DEMO_RESUME_DATA: ResumeData = {
         en: "Participated in CT image organ segmentation research using improved U-Net model, responsible for data preprocessing and model training",
       },
       highlights: [
-        { zh: "在公开数据集上达到Dice系数0.91，较基线提升3个百分点", en: "Achieved Dice coefficient of 0.91 on public dataset, improving baseline by 3 percentage points" },
+        { zh: "在公开数据集上达到Dice系数 **0.91**，较基线提升 **3个百分点**", en: "Achieved Dice coefficient of **0.91** on public dataset, improving baseline by **3 percentage points**" },
         { zh: "共同撰写论文摘要投递至MICCAI 2024", en: "Co-authored abstract submitted to MICCAI 2024" },
       ],
     },

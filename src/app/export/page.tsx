@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PreviewPanel } from "@/components/preview/PreviewPanel";
-import type { ResumeData, TemplateName, SectionKey, SectionEmphasis } from "@/types";
+import { clampFontScale, normalizeAccentColor } from "@/types";
+import type { AccentColor, ResumeData, TemplateName, SectionKey, SectionEmphasis } from "@/types";
 import { ALL_SECTION_KEYS, normalizeSectionOrder } from "@/lib/resume/sectionOrder";
 
 interface PrintPayload {
@@ -11,6 +12,8 @@ interface PrintPayload {
   sectionOrder: SectionKey[];
   emphasis: Partial<Record<SectionKey, SectionEmphasis>>;
   language: "zh" | "en";
+  fontScale?: number;
+  accentColor?: AccentColor;
   createdAt: number;
 }
 
@@ -65,6 +68,8 @@ function readPrintPayload(): PrintPayload | null {
       ...parsed,
       sectionOrder: normalizeSectionOrder(parsed.sectionOrder),
       emphasis: parsed.emphasis ?? {},
+      fontScale: clampFontScale(parsed.fontScale),
+      accentColor: normalizeAccentColor(parsed.accentColor),
       createdAt: typeof parsed.createdAt === "number" ? parsed.createdAt : Date.now(),
     };
   } catch {
@@ -207,6 +212,8 @@ export default function ExportPage() {
           sectionOrder: payload.sectionOrder,
           emphasis: payload.emphasis,
           language: payload.language,
+          fontScale: payload.fontScale,
+          accentColor: payload.accentColor,
         }}
       />
     </div>

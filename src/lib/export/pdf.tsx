@@ -30,7 +30,8 @@ interface PDFProps {
 
 function getText(b: { zh: string; en: string } | undefined | null, lang: "zh" | "en"): string {
   if (!b) return "";
-  return lang === "zh" ? b.zh || b.en : b.en || b.zh;
+  const raw = lang === "zh" ? b.zh || b.en : b.en || b.zh;
+  return raw.replace(/\*\*([^*\n]+?)\*\*/g, "$1");
 }
 
 const SECTION_LABELS: Record<SectionKey, { zh: string; en: string }> = {

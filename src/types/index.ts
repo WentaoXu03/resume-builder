@@ -1,2 +1,2 @@
-export type { ResumeData, PersonalInfo, Experience, Project, SkillCategory, Education, Honor, CampusActivity, ResearchExperience, SectionKey, SectionEmphasis, TemplateName, LayoutSuggestion, BilingualText } from './resume';
-export { DEFAULT_RESUME_DATA, TEMPLATE_NAMES, SECTION_LABELS, DEFAULT_SECTION_ORDER } from './resume';
+export type { ResumeData, PersonalInfo, Experience, Project, SkillCategory, Education, Honor, CampusActivity, ResearchExperience, SectionKey, SectionEmphasis, TemplateName, AccentColor, LayoutSuggestion, BilingualText } from './resume';
+export { DEFAULT_RESUME_DATA, TEMPLATE_NAMES, ACCENT_COLOR_OPTIONS, DEFAULT_ACCENT_COLOR, normalizeAccentColor, SECTION_LABELS, DEFAULT_SECTION_ORDER, DEFAULT_FONT_SCALE, MIN_FONT_SCALE, MAX_FONT_SCALE, FONT_SCALE_STEP, clampFontScale } from './resume';

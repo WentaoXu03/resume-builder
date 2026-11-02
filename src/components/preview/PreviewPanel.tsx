@@ -8,7 +8,8 @@ import { ClassicTemplate } from "@/components/templates/ClassicTemplate";
 import { ModernTemplate } from "@/components/templates/ModernTemplate";
 import { MinimalTemplate } from "@/components/templates/MinimalTemplate";
 import { CompactTemplate } from "@/components/templates/CompactTemplate";
-import type { ResumeData, SectionEmphasis, SectionKey, TemplateName } from "@/types";
+import { clampFontScale, normalizeAccentColor } from "@/types";
+import type { AccentColor, ResumeData, SectionEmphasis, SectionKey, TemplateName } from "@/types";
 
 export interface PreviewSnapshot {
   data: ResumeData;
@@ -16,6 +17,8 @@ export interface PreviewSnapshot {
   sectionOrder: SectionKey[];
   emphasis: Partial<Record<SectionKey, SectionEmphasis>>;
   language: "zh" | "en";
+  fontScale?: number;
+  accentColor?: AccentColor;
 }
 
 interface PreviewPanelProps {
@@ -34,6 +37,8 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(functi
   const sectionOrder = snapshot?.sectionOrder ?? store.sectionOrder;
   const emphasis = snapshot?.emphasis ?? store.emphasis;
   const language = snapshot?.language ?? store.activeLanguage;
+  const fontScale = clampFontScale(snapshot?.fontScale ?? store.fontScale);
+  const accentColor = normalizeAccentColor(snapshot?.accentColor ?? store.accentColor);
   const normalizedSectionOrder = useMemo(
     () => normalizeSectionOrder(sectionOrder),
     [sectionOrder],
@@ -44,11 +49,13 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(functi
     sectionOrder: normalizedSectionOrder,
     emphasis,
     language,
+    fontScale,
+    accentColor,
   };
 
   useEffect(() => {
     onRendered?.();
-  }, [onRendered, data, template, normalizedSectionOrder, emphasis, language]);
+  }, [onRendered, data, template, normalizedSectionOrder, emphasis, language, fontScale, accentColor]);
 
   return (
     <div className={`preview-shell${exportMode ? " export-preview-shell" : ""}`}>
@@ -57,6 +64,8 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(functi
         id="resume-preview"
         data-template={template}
         data-language={language}
+        data-font-scale={String(fontScale)}
+        data-accent-color={accentColor}
         data-export-mode={exportMode ? "true" : "false"}
         className="resume-print-area"
         style={{

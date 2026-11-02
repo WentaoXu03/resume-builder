@@ -112,6 +112,35 @@ export const TEMPLATE_NAMES: Record<TemplateName, BilingualText> = {
   compact: { zh: '紧凑', en: 'Compact' },
 };
 
+export type AccentColor = 'obsidian' | 'navy' | 'charcoal' | 'forest' | 'burgundy';
+
+export const DEFAULT_ACCENT_COLOR: AccentColor = 'obsidian';
+
+export const ACCENT_COLOR_OPTIONS: {
+  key: AccentColor;
+  swatch: string;
+  label: BilingualText;
+}[] = [
+  { key: 'obsidian', swatch: '#18181b', label: { zh: '曜石黑', en: 'Obsidian' } },
+  { key: 'navy', swatch: '#1e3a5f', label: { zh: '深海蓝', en: 'Oxford Navy' } },
+  { key: 'charcoal', swatch: '#334155', label: { zh: '钛灰墨', en: 'Graphite' } },
+  { key: 'forest', swatch: '#1b4332', label: { zh: '松烟绿', en: 'Pine Green' } },
+  { key: 'burgundy', swatch: '#5c1d24', label: { zh: '勃艮第', en: 'Burgundy' } },
+];
+
+export function normalizeAccentColor(value?: unknown): AccentColor {
+  if (
+    value === 'obsidian' ||
+    value === 'navy' ||
+    value === 'charcoal' ||
+    value === 'forest' ||
+    value === 'burgundy'
+  ) {
+    return value;
+  }
+  return DEFAULT_ACCENT_COLOR;
+}
+
 export const DEFAULT_RESUME_DATA: ResumeData = {
   personalInfo: {
     name: { zh: '', en: '' },
@@ -156,3 +185,14 @@ export const SECTION_LABELS: Record<SectionKey, BilingualText> = {
   campusActivities: { zh: '校园经历', en: 'Campus Activities' },
   skills: { zh: '技能特长', en: 'Skills' },
 };
+
+export const DEFAULT_FONT_SCALE = 1;
+export const MIN_FONT_SCALE = 0.85;
+export const MAX_FONT_SCALE = 1.25;
+export const FONT_SCALE_STEP = 0.05;
+
+export function clampFontScale(scale?: unknown): number {
+  if (typeof scale !== 'number' || !Number.isFinite(scale)) return DEFAULT_FONT_SCALE;
+  const clamped = Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, scale));
+  return Math.round(clamped * 100) / 100;
+}

@@ -6,6 +6,7 @@ interface SVGExportOptions {
   emphasis: Partial<Record<SectionKey, SectionEmphasis>>;
   language: "zh" | "en";
   template: "classic" | "modern" | "minimal" | "compact";
+  fontScale?: number;
   width?: number;
   height?: number;
 }
@@ -13,12 +14,13 @@ interface SVGExportOptions {
 const FONT = "'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif";
 
 function esc(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+  return str.replace(/\*\*([^*\n]+?)\*\*/g, "$1").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
 function getText(b: { zh: string; en: string } | undefined | null, lang: "zh" | "en"): string {
   if (!b) return "";
-  return lang === "zh" ? b.zh || b.en : b.en || b.zh;
+  const raw = lang === "zh" ? b.zh || b.en : b.en || b.zh;
+  return raw.replace(/\*\*([^*\n]+?)\*\*/g, "$1");
 }
 
 const SECTION_LABELS: Record<SectionKey, { zh: string; en: string }> = {
@@ -42,7 +44,7 @@ function wrapText(text: string, maxWidth: number, fontSize: number): string[] {
   const lines: string[] = [];
   let line = "";
   let lineW = 0;
-  for (const ch of text) {
+  for (const ch of text.replace(/\*\*([^*\n]+?)\*\*/g, "$1")) {
     const w = charW(ch);
     if (lineW + w > maxWidth && line.length > 0) {
       lines.push(line);

@@ -1,243 +1,293 @@
 "use client";
 
-import type { ResumeData, SectionKey, SectionEmphasis } from "@/types";
+import type { AccentColor, ResumeData, SectionKey, SectionEmphasis } from "@/types";
 import { RESUME_TEMPLATE_ROOT_STYLE, RESUME_TOKENS } from "@/lib/templates/designTokens";
 import { normalizeSectionOrder } from "@/lib/resume/sectionOrder";
+import {
+  Bullets,
+  EntryHeader,
+  FONT_FAMILY,
+  HonorsGrid,
+  INK,
+  InlineList,
+  LEADING,
+  NUMERIC,
+  PhotoSlot,
+  createTypeScale,
+  displayUrl,
+  educationMeta,
+  emphasizeMetrics,
+  headingTracking,
+  pickText,
+  projectMeta,
+  resolveAccentPalette,
+  sectionLabel,
+} from "./shared";
 
 interface TemplateProps {
   data: ResumeData;
   sectionOrder: SectionKey[];
   emphasis: Partial<Record<SectionKey, SectionEmphasis>>;
   language: "zh" | "en";
+  fontScale?: number;
+  accentColor?: AccentColor;
 }
 
-const TOKENS = RESUME_TOKENS;
-const C = RESUME_TOKENS.colors;
-const SIDEBAR_BG = C.modernSidebar;
-const SIDEBAR_TEXT = C.modernSidebarText;
-const SIDEBAR_TEXT_LIGHT = C.modernSidebarMuted;
-const SIDEBAR_ACCENT = C.accentBlue;
-const MAIN_TEXT = C.text;
-const MAIN_TEXT_SECONDARY = C.textSecondary;
-const MAIN_TEXT_MUTED = C.textMuted;
-const MAIN_BORDER = C.lineSubtle;
-const SECTION_LINE = C.accentBlue;
-
-const SECTION_LABELS: Record<SectionKey, { zh: string; en: string }> = {
-  personalInfo: { zh: "基本信息", en: "Personal Info" },
-  education: { zh: "教育背景", en: "Education" },
-  researchExperience: { zh: "科研经历", en: "Research Experience" },
-  honors: { zh: "荣誉奖项", en: "Honors & Awards" },
-  experience: { zh: "实习经历", en: "Internship" },
-  projects: { zh: "项目经历", en: "Projects" },
-  campusActivities: { zh: "校园经历", en: "Campus Activities" },
-  skills: { zh: "技能特长", en: "Skills" },
-};
-
-function PhotoSlot({ src, language, width, height }: { src: string; language: "zh" | "en"; width: number; height: number }) {
-  if (src) {
-    return (
-      <div style={{ width: `${width}px`, height: `${height}px`, borderRadius: "2px", overflow: "hidden", flexShrink: 0, border: "1px solid #d1d5db" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      </div>
-    );
-  }
-  return (
-    <div style={{ width: `${width}px`, height: `${height}px`, borderRadius: "2px", flexShrink: 0, border: "1px dashed #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "#9ca3af" }}>
-      {language === "zh" ? "证件照" : "Photo"}
-    </div>
-  );
-}
+/**
+ * Modern — two-column layout with a dark sidebar (28%) and a wide main column (72%).
+ *
+ * Photo slot: standard 1-inch ID photo converted to A4 sidebar (86×118px).
+ */
+const PHOTO = { width: 86, height: 118 };
+const MAIN_PAD = { top: 26, right: 28, bottom: 24, left: 26 };
+const BASE_SPACE = { section: 12, headToBody: 6, entry: 8, line: 2 };
 
 export function ModernTemplate({
   data,
   sectionOrder,
   emphasis,
   language,
+  fontScale = 1,
+  accentColor,
 }: TemplateProps) {
-  const getText = (b: { zh: string; en: string } | undefined | null) => {
-    if (!b) return "";
-    return language === "zh" ? b.zh || b.en : b.en || b.zh;
+  const t = (b: Parameters<typeof pickText>[0]) => pickText(b, language);
+  const ts = createTypeScale(fontScale);
+  const palette = resolveAccentPalette(accentColor);
+  const SIDEBAR = {
+    bg: palette.sidebarBg,
+    text: "#f8fafc",
+    body: "#e2e8f0",
+    muted: palette.sidebarMuted,
+    accent: palette.sidebarAccent,
+    divider: "rgba(255, 255, 255, 0.12)",
+    pillBg: "rgba(255, 255, 255, 0.09)",
+  };
+  const ACCENT = palette.accent;
+  const SPACE = {
+    section: ts.sp(BASE_SPACE.section),
+    headToBody: ts.sp(BASE_SPACE.headToBody),
+    entry: ts.sp(BASE_SPACE.entry),
+    line: BASE_SPACE.line,
   };
   const normalizedSectionOrder = normalizeSectionOrder(sectionOrder);
 
+  const bodyText = { fontSize: ts.body, color: INK.body, lineHeight: LEADING.body } as const;
+  const metaText = { fontSize: ts.meta, color: INK.meta, lineHeight: LEADING.meta } as const;
+  const entryStyle = (last: boolean) => ({ marginBottom: last ? 0 : SPACE.entry });
+
+  const renderSidebarHeading = (label: string) => (
+    <div
+      style={{
+        fontSize: ts.fs(12),
+        fontWeight: 700,
+        color: SIDEBAR.text,
+        letterSpacing: headingTracking(language),
+        textTransform: language === "en" ? "uppercase" : undefined,
+        paddingBottom: 4,
+        marginBottom: 7,
+        borderBottom: `1.5px solid ${SIDEBAR.accent}`,
+        lineHeight: 1.25,
+      }}
+    >
+      {label}
+    </div>
+  );
+
   const renderSidebarPersonalInfo = () => {
     const info = data.personalInfo;
-    const name = getText(info.name);
+    const name = t(info.name);
     if (!name && !info.email) return null;
+
+    const identity = [info.gender, info.birthDate, info.politicalStatus].filter(Boolean).join(" · ");
+    const summary = t(info.summary);
+    const contactRows: { label: string; value: string }[] = [];
+    if (identity) contactRows.push({ label: language === "zh" ? "信息" : "Info", value: identity });
+    if (info.phone) contactRows.push({ label: language === "zh" ? "电话" : "Tel", value: info.phone });
+    if (info.email) contactRows.push({ label: language === "zh" ? "邮箱" : "Mail", value: info.email });
+    if (t(info.location)) contactRows.push({ label: language === "zh" ? "城市" : "Loc", value: t(info.location) });
+    if (info.website) contactRows.push({ label: language === "zh" ? "主页" : "Web", value: displayUrl(info.website) });
 
     return (
       <div>
         <div style={{ margin: "0 auto 10px", display: "flex", justifyContent: "center" }}>
-          <PhotoSlot src={info.avatarUrl} language={language} width={TOKENS.photo.modern.width} height={TOKENS.photo.modern.height} />
+          <PhotoSlot
+            src={info.avatarUrl}
+            lang={language}
+            width={PHOTO.width}
+            height={PHOTO.height}
+            radius={3}
+            border="1px solid rgba(255,255,255,0.25)"
+            placeholderBorder="1px dashed rgba(255,255,255,0.28)"
+            placeholderColor={SIDEBAR.muted}
+          />
         </div>
         <div
           style={{
-            fontSize: "20px",
+            fontSize: ts.fs(22),
             fontWeight: 700,
-            color: SIDEBAR_TEXT,
+            color: SIDEBAR.text,
             textAlign: "center",
-            lineHeight: 1.3,
+            lineHeight: 1.25,
+            letterSpacing: language === "zh" ? "0.1em" : "0.02em",
+            marginRight: language === "zh" ? "-0.1em" : 0,
           }}
         >
           {name}
         </div>
-        {getText(info.title) && (
+        {t(info.title) && (
           <div
             style={{
-              fontSize: "11px",
-              color: SIDEBAR_TEXT_LIGHT,
+              fontSize: ts.fs(11.5),
+              color: SIDEBAR.accent,
+              fontWeight: 500,
               textAlign: "center",
-              marginTop: "3px",
+              marginTop: 3,
+              lineHeight: 1.35,
             }}
           >
-            {getText(info.title)}
+            {t(info.title)}
           </div>
         )}
-        <div
-          style={{
-            height: "1px",
-            background: "rgba(255,255,255,0.2)",
-            margin: "10px 0",
-          }}
-        />
-        <div
-          style={{
-            fontSize: "10px",
-            color: SIDEBAR_TEXT_LIGHT,
-            lineHeight: 1.8,
-          }}
-        >
-          {[info.gender, info.birthDate, info.politicalStatus]
-            .filter(Boolean)
-            .map((v) => v)
-            .length > 0 && (
-            <div>
-              {[info.gender, info.birthDate, info.politicalStatus]
-                .filter(Boolean)
-                .join(" · ")}
+        {contactRows.length > 0 && (
+          <div
+            style={{
+              marginTop: 12,
+              paddingTop: 10,
+              borderTop: `1px solid ${SIDEBAR.divider}`,
+              display: "grid",
+              gridTemplateColumns: "auto 1fr",
+              columnGap: 8,
+              rowGap: 4,
+              fontSize: ts.fs(10.5),
+              lineHeight: 1.45,
+              ...NUMERIC,
+            }}
+          >
+            {contactRows.map((row, idx) => (
+              <div key={idx} style={{ display: "contents" }}>
+                <span style={{ color: SIDEBAR.muted, fontWeight: 500 }}>{row.label}</span>
+                <span style={{ color: SIDEBAR.body, wordBreak: "break-all" }}>{row.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {summary && (
+          <div style={{ marginTop: 14 }}>
+            {renderSidebarHeading(sectionLabel("summary", language))}
+            <div style={{ fontSize: ts.fs(10.5), color: SIDEBAR.body, lineHeight: 1.5 }}>
+              {emphasizeMetrics(summary, { color: SIDEBAR.text, fontWeight: 600 })}
             </div>
-          )}
-          {info.phone && <div>📱 {info.phone}</div>}
-          {info.email && <div>✉ {info.email}</div>}
-          {getText(info.location) && <div>📍 {getText(info.location)}</div>}
-          {info.website && <div>🔗 {info.website}</div>}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderSidebarSkills = () => {
+    if (data.skills.length === 0) return null;
+    return (
+      <div>
+        {renderSidebarHeading(sectionLabel("skills", language))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {data.skills.map((cat) => (
+            <div key={cat.id}>
+              <div style={{ fontSize: ts.fs(11), fontWeight: 600, color: SIDEBAR.text, marginBottom: 3, lineHeight: 1.3 }}>
+                {t(cat.category)}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {cat.items.map((item, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      fontSize: ts.fs(10),
+                      lineHeight: 1.35,
+                      padding: "1.5px 6px",
+                      borderRadius: 3,
+                      background: SIDEBAR.pillBg,
+                      color: SIDEBAR.body,
+                    }}
+                  >
+                    {emphasizeMetrics(item, { color: SIDEBAR.text, fontWeight: 600 })}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
   };
 
-  const renderMainSectionHeader = (sectionKey: SectionKey) => (
+  const renderHonors = (first: boolean) => {
+    if (data.honors.length === 0) return null;
+    return (
+      <div>
+        {renderMainSectionHeader("honors", first)}
+        <HonorsGrid
+          honors={data.honors}
+          lang={language}
+          fontScale={fontScale}
+          accentColor={accentColor}
+          lineHeight={LEADING.body}
+          columnGap={20}
+          twoColumnMaxEm={22}
+        />
+      </div>
+    );
+  };
+
+  const renderMainSectionHeader = (sectionKey: SectionKey, first: boolean) => (
     <div
       style={{
-        fontSize: `${TOKENS.fontSize.sectionTitle}px`,
+        marginTop: first ? 0 : SPACE.section,
+        marginBottom: SPACE.headToBody,
+        paddingBottom: 3,
+        borderBottom: `1.5px solid ${ACCENT}`,
+        fontSize: ts.section,
         fontWeight: 700,
-        color: MAIN_TEXT,
-        marginBottom: `${TOKENS.spacing.sectionTitleBottom}px`,
-        paddingBottom: "3px",
-        borderBottom: `${TOKENS.line.sectionStrongPx}px solid ${SECTION_LINE}`,
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
+        color: INK.strong,
+        letterSpacing: headingTracking(language),
+        textTransform: language === "en" ? "uppercase" : undefined,
+        lineHeight: 1.25,
       }}
     >
-      {getText(SECTION_LABELS[sectionKey])}
+      {sectionLabel(sectionKey, language)}
     </div>
   );
 
-  const renderSkills = () => {
-    if (data.skills.length === 0) return null;
-    return (
-      <div style={{ marginBottom: "12px" }}>
-        {renderMainSectionHeader("skills")}
-        {data.skills.map((cat) => (
-          <div key={cat.id} style={{ marginBottom: "5px", fontSize: `${TOKENS.fontSize.body}px`, lineHeight: 1.6 }}>
-            <span style={{ fontWeight: 600, color: MAIN_TEXT }}>{getText(cat.category)}</span>
-            <span style={{ color: MAIN_TEXT_SECONDARY }}>: {cat.items.join(" | ")}</span>
-          </div>
-        ))}
-      </div>
-    );
-  };
+  const description = (text: string) =>
+    text ? <div style={{ ...bodyText, marginTop: SPACE.line }}>{emphasizeMetrics(text)}</div> : null;
 
-  const renderEducation = () => {
+  const bullets = (items: { zh: string; en: string }[] | undefined) => (
+    <Bullets
+      items={(items ?? []).map(t)}
+      markerColor={palette.marker}
+      fontScale={fontScale}
+      style={{ ...bodyText, marginTop: SPACE.line }}
+    />
+  );
+
+  const renderEducation = (first: boolean) => {
     if (data.education.length === 0) return null;
     return (
-      <div style={{ marginBottom: "12px" }}>
-        {renderMainSectionHeader("education")}
-        {data.education.map((edu) => {
-          const parts = [getText(edu.school)];
-          if (getText(edu.degree)) parts.push(getText(edu.degree));
-          if (getText(edu.major)) parts.push(getText(edu.major));
+      <div>
+        {renderMainSectionHeader("education", first)}
+        {data.education.map((edu, idx) => {
+          const meta = educationMeta(edu, language, { color: ACCENT });
           return (
-            <div
-              key={edu.id}
-              style={{ marginBottom: "8px" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                }}
-              >
-                <div>
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      color: MAIN_TEXT,
-                    }}
-                  >
-                    {parts.join(" · ")}
-                  </span>
-                  {edu.gpa && (
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        color: SIDEBAR_ACCENT,
-                        fontWeight: 600,
-                        marginLeft: "8px",
-                      }}
-                    >
-                      GPA: {edu.gpa}
-                    </span>
-                  )}
-                </div>
-                <div
-                  style={{
-                    fontSize: "10px",
-                    color: MAIN_TEXT_MUTED,
-                    flexShrink: 0,
-                  }}
-                >
-                  {edu.period}
-                </div>
-              </div>
-              {edu.courses && edu.courses.length > 0 && (
-                <div
-                  style={{
-                    fontSize: "9px",
-                    color: MAIN_TEXT_SECONDARY,
-                    marginTop: "3px",
-                  }}
-                >
-                  {edu.courses.join(" · ")}
+            <div key={edu.id} style={entryStyle(idx === data.education.length - 1)}>
+              <EntryHeader
+                title={t(edu.school)}
+                subtitle={[t(edu.major), t(edu.degree)].filter(Boolean).join(" · ")}
+                date={edu.period}
+                fontScale={fontScale}
+              />
+              {meta.length > 0 && (
+                <div style={{ fontSize: ts.fs(10.2), color: INK.body, lineHeight: LEADING.meta, marginTop: SPACE.line }}>
+                  <InlineList items={meta} separator="|" separatorColor={INK.rule} gap={6} />
                 </div>
               )}
-              {getText(edu.description) && (
-                <div
-                  style={{
-                    fontSize: `${TOKENS.fontSize.meta}px`,
-                    color: MAIN_TEXT_SECONDARY,
-                    marginTop: `${TOKENS.spacing.paragraphTop}px`,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {getText(edu.description)}
-                </div>
-              )}
+              {description(t(edu.description))}
             </div>
           );
         })}
@@ -245,135 +295,20 @@ export function ModernTemplate({
     );
   };
 
-  const renderResearchExperience = () => {
+  const renderResearchExperience = (first: boolean) => {
     if (!data.researchExperience || data.researchExperience.length === 0) return null;
     return (
-      <div style={{ marginBottom: "12px" }}>
-        {renderMainSectionHeader("researchExperience")}
-        {data.researchExperience.map((item, idx) => (
-          <div
-            key={item.id}
-            style={{
-              marginBottom: idx < data.researchExperience.length - 1 ? "8px" : 0,
-              paddingBottom: idx < data.researchExperience.length - 1 ? "8px" : 0,
-              borderBottom:
-                idx < data.researchExperience.length - 1
-                  ? `1px solid ${MAIN_BORDER}`
-                  : "none",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-              }}
-            >
-              <div>
-                <span
-                  style={{ fontWeight: 600, fontSize: "11px", color: MAIN_TEXT }}
-                >
-                  {getText(item.project) || getText(item.institution)}
-                </span>
-                {getText(item.role) && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: MAIN_TEXT_SECONDARY,
-                      fontWeight: 400,
-                    }}
-                  >
-                    {" · "}
-                    {getText(item.role)}
-                  </span>
-                )}
-              </div>
-              <span
-                style={{
-                  fontSize: "10px",
-                  color: MAIN_TEXT_MUTED,
-                  flexShrink: 0,
-                }}
-              >
-                {item.period}
-              </span>
-            </div>
-            <div style={{ fontSize: "10px", color: MAIN_TEXT_MUTED, marginTop: "1px" }}>
-              {getText(item.institution)}
-            </div>
-            {getText(item.description) && (
-              <div style={{ fontSize: "10.5px", color: MAIN_TEXT_SECONDARY, lineHeight: 1.6, marginTop: "2px" }}>
-                {getText(item.description)}
-              </div>
-            )}
-            {item.highlights && item.highlights.length > 0 && (
-              <ul
-                style={{
-                  margin: "3px 0 0 0",
-                  paddingLeft: "14px",
-                  fontSize: "10.5px",
-                  color: MAIN_TEXT_SECONDARY,
-                  lineHeight: 1.6,
-                }}
-              >
-                {item.highlights.map((h, i) => (
-                  <li key={i}>{getText(h)}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const renderHonors = () => {
-    if (data.honors.length === 0) return null;
-    return (
-      <div style={{ marginBottom: "12px" }}>
-        {renderMainSectionHeader("honors")}
-        {data.honors.map((honor) => {
+      <div>
+        {renderMainSectionHeader("researchExperience", first)}
+        {data.researchExperience.map((item, idx) => {
+          const title = t(item.project) || t(item.institution);
+          const institution = t(item.project) ? t(item.institution) : "";
           return (
-            <div key={honor.id} style={{ marginBottom: "4px", fontSize: `${TOKENS.fontSize.body}px` }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span style={{ fontWeight: 600, color: MAIN_TEXT }}>
-                    {getText(honor.title)}
-                  </span>
-                  {honor.level && (
-                    <span
-                      style={{
-                        fontSize: "9px",
-                        color: MAIN_TEXT_MUTED,
-                        fontWeight: 600,
-                        flexShrink: 0,
-                      }}
-                    >
-                      [{honor.level}]
-                    </span>
-                  )}
-                </div>
-                <span
-                  style={{
-                    fontSize: "10px",
-                    color: MAIN_TEXT_MUTED,
-                    flexShrink: 0,
-                  }}
-                >
-                  {honor.period}
-                </span>
-              </div>
-              {getText(honor.description) && (
-                <div style={{ fontSize: `${TOKENS.fontSize.meta}px`, color: MAIN_TEXT_SECONDARY, lineHeight: 1.6, marginTop: `${TOKENS.spacing.paragraphTop}px` }}>
-                  {getText(honor.description)}
-                </div>
-              )}
+            <div key={item.id} style={entryStyle(idx === data.researchExperience.length - 1)}>
+              <EntryHeader title={title} subtitle={t(item.role)} date={item.period} fontScale={fontScale} />
+              {institution && <div style={metaText}>{institution}</div>}
+              {description(t(item.description))}
+              {bullets(item.highlights)}
             </div>
           );
         })}
@@ -381,314 +316,121 @@ export function ModernTemplate({
     );
   };
 
-  const renderExperience = () => {
+  const renderExperience = (first: boolean) => {
     if (data.experience.length === 0) return null;
     return (
-      <div style={{ marginBottom: "12px" }}>
-        {renderMainSectionHeader("experience")}
+      <div>
+        {renderMainSectionHeader("experience", first)}
         {data.experience.map((exp, idx) => (
-          <div
-            key={exp.id}
-            style={{
-              marginBottom: idx < data.experience.length - 1 ? "8px" : 0,
-              paddingBottom: idx < data.experience.length - 1 ? "8px" : 0,
-              borderBottom:
-                idx < data.experience.length - 1
-                  ? `1px solid ${MAIN_BORDER}`
-                  : "none",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-              }}
-            >
-              <div>
-                <span
-                  style={{ fontWeight: 600, fontSize: "11px", color: MAIN_TEXT }}
-                >
-                  {getText(exp.company)}
-                </span>
-                {getText(exp.role) && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: MAIN_TEXT_SECONDARY,
-                      fontWeight: 400,
-                    }}
-                  >
-                    {" · "}
-                    {getText(exp.role)}
-                  </span>
-                )}
-              </div>
-              <span
-                style={{
-                  fontSize: "10px",
-                  color: MAIN_TEXT_MUTED,
-                  flexShrink: 0,
-                }}
-              >
-                {exp.period}
-              </span>
-            </div>
-            {getText(exp.description) && (
-              <div style={{ fontSize: "10.5px", color: MAIN_TEXT_SECONDARY, lineHeight: 1.6, marginTop: "2px" }}>
-                {getText(exp.description)}
-              </div>
-            )}
-            {exp.highlights && exp.highlights.length > 0 && (
-              <ul
-                style={{
-                  margin: "3px 0 0 0",
-                  paddingLeft: "14px",
-                  fontSize: "10.5px",
-                  color: MAIN_TEXT_SECONDARY,
-                  lineHeight: 1.6,
-                }}
-              >
-                {exp.highlights.map((h, i) => (
-                  <li key={i}>{getText(h)}</li>
-                ))}
-              </ul>
-            )}
+          <div key={exp.id} style={entryStyle(idx === data.experience.length - 1)}>
+            <EntryHeader title={t(exp.company)} subtitle={t(exp.role)} date={exp.period} fontScale={fontScale} />
+            {description(t(exp.description))}
+            {bullets(exp.highlights)}
           </div>
         ))}
       </div>
     );
   };
 
-  const renderProjects = () => {
+  const renderProjects = (first: boolean) => {
     if (data.projects.length === 0) return null;
     return (
-      <div style={{ marginBottom: "12px" }}>
-        {renderMainSectionHeader("projects")}
-        {data.projects.map((proj, idx) => (
-          <div
-            key={proj.id}
-            style={{
-              marginBottom: idx < data.projects.length - 1 ? "8px" : 0,
-              paddingBottom: idx < data.projects.length - 1 ? "8px" : 0,
-              borderBottom:
-                idx < data.projects.length - 1
-                  ? `1px solid ${MAIN_BORDER}`
-                  : "none",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-              }}
-            >
-              <div>
-                <span
-                  style={{ fontWeight: 600, fontSize: "11px", color: MAIN_TEXT }}
-                >
-                  {getText(proj.name)}
-                </span>
-                {getText(proj.role) && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: MAIN_TEXT_SECONDARY,
-                      fontWeight: 400,
-                    }}
-                  >
-                    {" · "}
-                    {getText(proj.role)}
-                  </span>
-                )}
-              </div>
-              <span
-                style={{
-                  fontSize: "10px",
-                  color: MAIN_TEXT_MUTED,
-                  flexShrink: 0,
-                }}
-              >
-                {proj.period}
-              </span>
+      <div>
+        {renderMainSectionHeader("projects", first)}
+        {data.projects.map((proj, idx) => {
+          const meta = projectMeta(proj);
+          return (
+            <div key={proj.id} style={entryStyle(idx === data.projects.length - 1)}>
+              <EntryHeader title={t(proj.name)} subtitle={t(proj.role)} date={proj.period} fontScale={fontScale} />
+              {meta.length > 0 && (
+                <div style={metaText}>
+                  <InlineList items={meta} separator="|" separatorColor={INK.rule} gap={7} />
+                </div>
+              )}
+              {description(t(proj.description))}
+              {bullets(proj.highlights)}
             </div>
-            {proj.link && (
-              <div style={{ fontSize: "10px", color: MAIN_TEXT_MUTED, marginTop: "1px" }}>
-                {proj.link}
-              </div>
-            )}
-            {proj.tech && proj.tech.length > 0 && (
-              <div
-                style={{
-                  fontSize: "9px",
-                  color: MAIN_TEXT_SECONDARY,
-                  marginTop: "3px",
-                }}
-              >
-                {proj.tech.join(" · ")}
-              </div>
-            )}
-            {getText(proj.description) && (
-              <div style={{ fontSize: "10.5px", color: MAIN_TEXT_SECONDARY, lineHeight: 1.6, marginTop: "2px" }}>
-                {getText(proj.description)}
-              </div>
-            )}
-            {proj.highlights && proj.highlights.length > 0 && (
-              <ul
-                style={{
-                  margin: "3px 0 0 0",
-                  paddingLeft: "14px",
-                  fontSize: "10.5px",
-                  color: MAIN_TEXT_SECONDARY,
-                  lineHeight: 1.6,
-                }}
-              >
-                {proj.highlights.map((h, i) => (
-                  <li key={i}>{getText(h)}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
 
-  const renderCampusActivities = () => {
+  const renderCampusActivities = (first: boolean) => {
     if (data.campusActivities.length === 0) return null;
     return (
-      <div style={{ marginBottom: "12px" }}>
-        {renderMainSectionHeader("campusActivities")}
+      <div>
+        {renderMainSectionHeader("campusActivities", first)}
         {data.campusActivities.map((act, idx) => (
-          <div
-            key={act.id}
-            style={{
-              marginBottom: idx < data.campusActivities.length - 1 ? "8px" : 0,
-              paddingBottom: idx < data.campusActivities.length - 1 ? "8px" : 0,
-              borderBottom:
-                idx < data.campusActivities.length - 1
-                  ? `1px solid ${MAIN_BORDER}`
-                  : "none",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-              }}
-            >
-              <div>
-                <span
-                  style={{ fontWeight: 600, fontSize: "11px", color: MAIN_TEXT }}
-                >
-                  {getText(act.organization)}
-                </span>
-                {getText(act.role) && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: MAIN_TEXT_SECONDARY,
-                      fontWeight: 400,
-                    }}
-                  >
-                    {" · "}
-                    {getText(act.role)}
-                  </span>
-                )}
-              </div>
-              <span
-                style={{
-                  fontSize: "10px",
-                  color: MAIN_TEXT_MUTED,
-                  flexShrink: 0,
-                }}
-              >
-                {act.period}
-              </span>
-            </div>
-            {getText(act.description) && (
-              <div style={{ fontSize: "10.5px", color: MAIN_TEXT_SECONDARY, lineHeight: 1.6, marginTop: "2px" }}>
-                {getText(act.description)}
-              </div>
-            )}
-            {act.highlights && act.highlights.length > 0 && (
-              <ul
-                style={{
-                  margin: "3px 0 0 0",
-                  paddingLeft: "14px",
-                  fontSize: "10.5px",
-                  color: MAIN_TEXT_SECONDARY,
-                  lineHeight: 1.6,
-                }}
-              >
-                {act.highlights.map((h, i) => (
-                  <li key={i}>{getText(h)}</li>
-                ))}
-              </ul>
-            )}
+          <div key={act.id} style={entryStyle(idx === data.campusActivities.length - 1)}>
+            <EntryHeader title={t(act.organization)} subtitle={t(act.role)} date={act.period} fontScale={fontScale} />
+            {description(t(act.description))}
+            {bullets(act.highlights)}
           </div>
         ))}
       </div>
     );
   };
 
-  const mainSections: SectionKey[] = [
+  const sidebarSectionKeys: SectionKey[] = ["skills"];
+  const mainSectionKeys: SectionKey[] = [
     "education",
     "researchExperience",
     "honors",
     "experience",
     "projects",
     "campusActivities",
-    "skills",
   ];
 
   const sidebarRenderers: Record<string, () => React.ReactNode> = {
     personalInfo: renderSidebarPersonalInfo,
+    skills: renderSidebarSkills,
   };
 
-  const mainRenderers: Record<string, () => React.ReactNode> = {
+  const mainRenderers: Record<string, (first: boolean) => React.ReactNode> = {
     education: renderEducation,
     researchExperience: renderResearchExperience,
     honors: renderHonors,
     experience: renderExperience,
     projects: renderProjects,
     campusActivities: renderCampusActivities,
-    skills: renderSkills,
   };
 
-  const visibleSidebarSections: SectionKey[] = ["personalInfo"];
+  const visibleSidebarSections: SectionKey[] = [
+    "personalInfo",
+    ...normalizedSectionOrder.filter(
+      (key) => sidebarSectionKeys.includes(key) && emphasis[key] !== "hidden"
+    ),
+  ];
+
   const visibleMainSections = normalizedSectionOrder.filter(
-    (key) =>
-      mainSections.includes(key) &&
-      emphasis[key] !== "hidden"
+    (key) => mainSectionKeys.includes(key) && emphasis[key] !== "hidden"
   );
 
   return (
     <div
       style={{
         ...RESUME_TEMPLATE_ROOT_STYLE,
-        minHeight: `${TOKENS.page.minHeightPx}px`,
-        fontFamily: TOKENS.fontFamily,
-        lineHeight: 1.5,
+        minHeight: `${RESUME_TOKENS.page.minHeightPx}px`,
+        fontFamily: FONT_FAMILY,
+        lineHeight: LEADING.body,
         display: "flex",
-        color: MAIN_TEXT,
+        color: INK.strong,
         background: "#ffffff",
         overflow: "hidden",
       }}
     >
       <div
         style={{
-          width: "30%",
-          flex: "0 0 30%",
+          width: "28%",
+          flex: "0 0 28%",
           boxSizing: "border-box",
-          background: SIDEBAR_BG,
-          color: SIDEBAR_TEXT,
-          padding: "24px 16px",
+          background: SIDEBAR.bg,
+          color: SIDEBAR.text,
+          padding: "26px 18px 24px",
           display: "flex",
           flexDirection: "column",
-          gap: "16px",
+          gap: 16,
         }}
       >
         {visibleSidebarSections.map((key) => (
@@ -697,14 +439,14 @@ export function ModernTemplate({
       </div>
       <div
         style={{
-          width: "70%",
-          flex: "0 0 70%",
+          width: "72%",
+          flex: "0 0 72%",
           boxSizing: "border-box",
-          padding: `${TOKENS.page.padding.modern.top}px ${TOKENS.page.padding.modern.right}px ${TOKENS.page.padding.modern.bottom}px ${TOKENS.page.padding.modern.left}px`,
+          padding: `${MAIN_PAD.top}px ${MAIN_PAD.right}px ${MAIN_PAD.bottom}px ${MAIN_PAD.left}px`,
         }}
       >
-        {visibleMainSections.map((key) => (
-          <div key={key}>{mainRenderers[key]?.()}</div>
+        {visibleMainSections.map((key, idx) => (
+          <div key={key}>{mainRenderers[key]?.(idx === 0)}</div>
         ))}
       </div>
     </div>

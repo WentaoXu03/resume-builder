@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
-import { SECTION_LABELS } from "@/types";
+import { ACCENT_COLOR_OPTIONS, MAX_FONT_SCALE, MIN_FONT_SCALE, SECTION_LABELS } from "@/types";
 import type { SectionKey } from "@/types";
 import t from "@/lib/i18n";
 import { getControllableSectionOrder } from "@/lib/resume/sectionOrder";
@@ -23,8 +23,13 @@ export function LayoutControls() {
     sectionOrder,
     emphasis,
     activeLanguage,
+    fontScale,
+    accentColor,
     setSectionOrder,
     toggleSectionVisibility,
+    stepFontScale,
+    resetFontScale,
+    setAccentColor,
   } = useResumeStore();
   const [draggingSection, setDraggingSection] = useState<SectionKey | null>(null);
   const orderedSections = getControllableSectionOrder(sectionOrder);
@@ -46,6 +51,84 @@ export function LayoutControls() {
 
   return (
     <section className="section-card mb-4" aria-label={t("layout.title")}>
+      <div className="mb-3 flex items-center justify-between gap-3 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg-tertiary)] px-3 py-2.5">
+        <div className="min-w-0">
+          <div className="text-xs font-semibold text-[var(--color-text)]">
+            {activeLanguage === "zh" ? "全局字号比例" : "Font Scale"}
+          </div>
+          <div className="text-[11px] text-[var(--color-text-muted)]">
+            {activeLanguage === "zh"
+              ? "成比例缩放全篇字号与排版栅格 (85%–125%)"
+              : "Proportionally scale all resume text & grid (85%–125%)"}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            className="btn-secondary px-2.5 py-1 text-xs font-bold"
+            disabled={fontScale <= MIN_FONT_SCALE}
+            onClick={() => stepFontScale(-1)}
+            aria-label={activeLanguage === "zh" ? "缩小字号" : "Decrease font size"}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className="btn-secondary min-w-[52px] px-2 py-1 text-center font-mono text-xs"
+            onClick={resetFontScale}
+            title={activeLanguage === "zh" ? "点击重置为 100%" : "Reset to 100%"}
+          >
+            {Math.round(fontScale * 100)}%
+          </button>
+          <button
+            type="button"
+            className="btn-secondary px-2.5 py-1 text-xs font-bold"
+            disabled={fontScale >= MAX_FONT_SCALE}
+            onClick={() => stepFontScale(1)}
+            aria-label={activeLanguage === "zh" ? "放大字号" : "Increase font size"}
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-3 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg-tertiary)] px-3 py-2.5">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-xs font-semibold text-[var(--color-text)]">
+            {activeLanguage === "zh" ? "简历强调色调" : "Accent Tone"}
+          </div>
+          <span className="text-[11px] text-[var(--color-text-muted)]">
+            {ACCENT_COLOR_OPTIONS.find((o) => o.key === accentColor)?.label[activeLanguage]}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {ACCENT_COLOR_OPTIONS.map((opt) => {
+            const active = accentColor === opt.key;
+            const label = opt.label[activeLanguage] || opt.label.zh;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setAccentColor(opt.key)}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition ${
+                  active
+                    ? "border-[var(--color-primary)] bg-white text-[var(--color-primary)] shadow-xs"
+                    : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-secondary)] hover:bg-white"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: opt.swatch }}
+                />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="mb-3">
         <h3 className="text-sm font-semibold text-[var(--color-text)]">{t("layout.title")}</h3>
         <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">

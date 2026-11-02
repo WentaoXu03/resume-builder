@@ -1,79 +1,157 @@
 "use client";
 
-import type { ResumeData, SectionKey, SectionEmphasis } from "@/types";
-import { RESUME_TEMPLATE_ROOT_STYLE, RESUME_TOKENS } from "@/lib/templates/designTokens";
+import type { AccentColor, ResumeData, SectionKey, SectionEmphasis } from "@/types";
+import { RESUME_TEMPLATE_ROOT_STYLE } from "@/lib/templates/designTokens";
 import { normalizeSectionOrder } from "@/lib/resume/sectionOrder";
+import {
+  Bullets,
+  EntryHeader,
+  FONT_FAMILY,
+  HonorsGrid,
+  INK,
+  InlineList,
+  LEADING,
+  NUMERIC,
+  PhotoSlot,
+  SkillsGrid,
+  createTypeScale,
+  displayUrl,
+  educationMeta,
+  emphasizeMetrics,
+  headingTracking,
+  pickText,
+  projectMeta,
+  resolveAccentPalette,
+  sectionLabel,
+} from "./shared";
 
 interface TemplateProps {
   data: ResumeData;
   sectionOrder: SectionKey[];
   emphasis: Partial<Record<SectionKey, SectionEmphasis>>;
   language: "zh" | "en";
+  fontScale?: number;
+  accentColor?: AccentColor;
 }
 
-const TOKENS = RESUME_TOKENS;
-const C = RESUME_TOKENS.colors;
+/**
+ * Classic — traditional single column.
+ * The identity block is centered on the true page axis (the 1-inch ID photo is taken out
+ * of the flow and mirrored by equal side padding); sections are marked by a bold, tracked
+ * title over a dark rule — the rules give the page a steady horizontal rhythm.
+ *
+ * Photo slot: standard 1-inch ID photo converted to A4 (25×35mm ≈ 90×124px).
+ */
+const PAGE = { top: 28, right: 36, bottom: 26, left: 36 };
+const PHOTO = { width: 90, height: 124 };
+const BASE_SPACE = { section: 9, headToBody: 4, entry: 6, line: 1 };
 
-function getText(b: { zh: string; en: string } | undefined | null, lang: "zh" | "en"): string {
-  if (!b) return "";
-  return lang === "zh" ? b.zh || b.en : b.en || b.zh;
-}
+export function ClassicTemplate({ data, sectionOrder, emphasis, language, fontScale = 1, accentColor }: TemplateProps) {
+  const t = (b: Parameters<typeof pickText>[0]) => pickText(b, language);
+  const ts = createTypeScale(fontScale);
+  const palette = resolveAccentPalette(accentColor);
+  const SPACE = {
+    section: ts.sp(BASE_SPACE.section),
+    headToBody: ts.sp(BASE_SPACE.headToBody),
+    entry: ts.sp(BASE_SPACE.entry),
+    line: BASE_SPACE.line,
+  };
 
-function SectionHead({ title }: { title: string }) {
-  return (
-    <div style={{ borderBottom: `${TOKENS.line.sectionStrongPx}px solid ${C.lineStrong}`, paddingBottom: "3px", marginBottom: `${TOKENS.spacing.sectionTitleBottom}px`, marginTop: `${TOKENS.spacing.sectionTop}px` }}>
-      <span style={{ fontSize: `${TOKENS.fontSize.sectionTitle}px`, fontWeight: 700, color: C.text }}>{title}</span>
-    </div>
-  );
-}
-
-function PhotoSlot({ src, language, width, height }: { src: string; language: "zh" | "en"; width: number; height: number }) {
-  if (src) {
-    return (
-      <div style={{ width: `${width}px`, height: `${height}px`, borderRadius: "2px", overflow: "hidden", flexShrink: 0, border: "1px solid #d1d5db" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      </div>
-    );
-  }
-  return (
-    <div style={{ width: `${width}px`, height: `${height}px`, borderRadius: "2px", flexShrink: 0, border: "1px dashed #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "#9ca3af" }}>
-      {language === "zh" ? "证件照" : "Photo"}
-    </div>
-  );
-}
-
-export function ClassicTemplate({ data, sectionOrder, emphasis, language }: TemplateProps) {
   const normalizedSectionOrder = normalizeSectionOrder(sectionOrder);
   const visibleSections = normalizedSectionOrder.filter(
     (key) => key === "personalInfo" || emphasis[key] !== "hidden"
   );
   const info = data.personalInfo;
-  const name = getText(info.name, language);
+  const name = t(info.name);
+
+  const bodyText = { fontSize: ts.body, color: INK.body, lineHeight: LEADING.body } as const;
+  const metaText = { fontSize: ts.meta, color: INK.meta, lineHeight: LEADING.meta } as const;
+  const entryStyle = (last: boolean) => ({ marginBottom: last ? 0 : SPACE.entry });
+
+  const sectionHead = (sectionKey: SectionKey) => (
+    <div
+      style={{
+        marginTop: SPACE.section,
+        marginBottom: SPACE.headToBody,
+        paddingBottom: 2,
+        borderBottom: `1.25px solid ${palette.accent}`,
+        fontSize: ts.section,
+        fontWeight: 700,
+        color: palette.accent,
+        letterSpacing: headingTracking(language),
+        textTransform: language === "en" ? "uppercase" : undefined,
+        lineHeight: 1.25,
+      }}
+    >
+      {sectionLabel(sectionKey, language)}
+    </div>
+  );
+
+  const description = (text: string) =>
+    text ? <div style={{ ...bodyText, marginTop: SPACE.line }}>{emphasizeMetrics(text)}</div> : null;
+
+  const bullets = (items: { zh: string; en: string }[] | undefined) => (
+    <Bullets
+      items={(items ?? []).map(t)}
+      markerColor={palette.marker}
+      fontScale={fontScale}
+      style={{ ...bodyText, marginTop: SPACE.line }}
+    />
+  );
 
   const renderPersonalInfo = () => {
     if (!name && !info.email) return null;
-    const contactParts = [
-      info.gender, info.birthDate, info.politicalStatus,
-      info.phone, info.email, getText(info.location, language), info.website,
-    ].filter(Boolean);
+    const identity = [info.gender, info.birthDate, info.politicalStatus].filter(Boolean);
+    const contacts = [info.phone, info.email, t(info.location), info.website ? displayUrl(info.website) : ""].filter(Boolean);
+    const summary = t(info.summary);
+    const sidePad = PHOTO.width + 14;
+    const rowStyle = { fontSize: ts.fs(10.5), color: INK.body, lineHeight: LEADING.body, ...NUMERIC } as const;
     return (
-      <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", marginBottom: "6px", paddingBottom: "8px", borderBottom: `${TOKENS.line.sectionNormalPx}px solid ${C.line}` }}>
-        <div style={{ flex: 1, textAlign: "center" }}>
-          <div style={{ fontSize: `${TOKENS.fontSize.name}px`, fontWeight: 700, color: C.text, letterSpacing: "0" }}>{name}</div>
-          {getText(info.title, language) && (
-            <div style={{ fontSize: `${TOKENS.fontSize.sectionTitle}px`, color: C.textSecondary, marginTop: "2px" }}>{getText(info.title, language)}</div>
-          )}
-          {contactParts.length > 0 && (
-            <div style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary, marginTop: "6px" }}>
-              {contactParts.join(" | ")}
-            </div>
-          )}
-          {getText(info.summary, language) && (
-            <div style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary, marginTop: "10px", lineHeight: 1.5, textAlign: "left" }}>{getText(info.summary, language)}</div>
-          )}
+      <div
+        style={{
+          position: "relative",
+          minHeight: PHOTO.height,
+          padding: `0 ${sidePad}px`,
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: ts.name,
+            fontWeight: 700,
+            color: INK.strong,
+            lineHeight: 1.2,
+            letterSpacing: language === "zh" ? "0.16em" : "0.02em",
+            // compensate trailing tracking so CJK names stay optically centered
+            marginRight: language === "zh" ? "-0.16em" : 0,
+          }}
+        >
+          {name}
         </div>
-        <PhotoSlot src={info.avatarUrl} language={language} width={TOKENS.photo.classic.width} height={TOKENS.photo.classic.height} />
+        {t(info.title) && (
+          <div style={{ fontSize: ts.headline, color: INK.body, marginTop: 2, lineHeight: 1.35 }}>{t(info.title)}</div>
+        )}
+        {identity.length > 0 && (
+          <div style={{ ...rowStyle, marginTop: 4 }}>
+            <InlineList items={identity} separator="|" separatorColor={INK.rule} gap={7} />
+          </div>
+        )}
+        {contacts.length > 0 && (
+          <div style={{ ...rowStyle, marginTop: identity.length > 0 ? 1 : 4 }}>
+            <InlineList items={contacts} separator="|" separatorColor={INK.rule} gap={7} />
+          </div>
+        )}
+        {summary && (
+          <div style={{ fontSize: ts.fs(10.5), color: INK.meta, lineHeight: 1.45, marginTop: 4 }}>
+            {emphasizeMetrics(summary)}
+          </div>
+        )}
+        <div style={{ position: "absolute", top: 0, right: 0 }}>
+          <PhotoSlot src={info.avatarUrl} lang={language} width={PHOTO.width} height={PHOTO.height} />
+        </div>
       </div>
     );
   };
@@ -82,31 +160,26 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language }: Temp
     if (data.education.length === 0) return null;
     return (
       <div>
-        <SectionHead title={language === "zh" ? "教育背景" : "Education"} />
-        {data.education.map((edu) => (
-          <div key={edu.id} style={{ marginBottom: `${TOKENS.spacing.itemBottom}px` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div>
-                <span style={{ fontWeight: 700, fontSize: `${TOKENS.fontSize.itemTitle}px` }}>{getText(edu.school, language)}</span>
-                {getText(edu.major, language) && <span style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary }}> · {getText(edu.major, language)}</span>}
-                {getText(edu.degree, language) && <span style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary }}> · {getText(edu.degree, language)}</span>}
-              </div>
-              <span style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textMuted, flexShrink: 0 }}>{edu.period}</span>
+        {sectionHead("education")}
+        {data.education.map((edu, idx) => {
+          const meta = educationMeta(edu, language);
+          return (
+            <div key={edu.id} style={entryStyle(idx === data.education.length - 1)}>
+              <EntryHeader
+                title={t(edu.school)}
+                subtitle={[t(edu.major), t(edu.degree)].filter(Boolean).join(" · ")}
+                date={edu.period}
+                fontScale={fontScale}
+              />
+              {meta.length > 0 && (
+                <div style={{ ...bodyText, marginTop: SPACE.line }}>
+                  <InlineList items={meta} separator="|" separatorColor={INK.rule} gap={7} />
+                </div>
+              )}
+              {description(t(edu.description))}
             </div>
-            {(edu.gpa || edu.courses.length > 0) && (
-              <div style={{ fontSize: `${TOKENS.fontSize.meta}px`, color: C.textSecondary, marginTop: "1px" }}>
-                {edu.gpa && <span>GPA: {edu.gpa}</span>}
-                {edu.gpa && edu.courses.length > 0 && <span> | </span>}
-                {edu.courses.length > 0 && <span>{language === "zh" ? "主修" : "Core"}: {edu.courses.join("、")}</span>}
-              </div>
-            )}
-            {getText(edu.description, language) && (
-              <div style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary, lineHeight: 1.5, marginTop: `${TOKENS.spacing.paragraphTop}px` }}>
-                {getText(edu.description, language)}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -115,23 +188,19 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language }: Temp
     if (!data.researchExperience || data.researchExperience.length === 0) return null;
     return (
       <div>
-        <SectionHead title={language === "zh" ? "科研经历" : "Research Experience"} />
-        {data.researchExperience.map((item) => (
-          <div key={item.id} style={{ marginBottom: `${TOKENS.spacing.itemBottom}px` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontWeight: 700, fontSize: `${TOKENS.fontSize.itemTitle}px` }}>{getText(item.project, language) || getText(item.institution, language)}<span style={{ fontWeight: 400 }}> · {getText(item.role, language)}</span></span>
-              <span style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textMuted, flexShrink: 0 }}>{item.period}</span>
+        {sectionHead("researchExperience")}
+        {data.researchExperience.map((item, idx) => {
+          const title = t(item.project) || t(item.institution);
+          const institution = t(item.project) ? t(item.institution) : "";
+          return (
+            <div key={item.id} style={entryStyle(idx === data.researchExperience.length - 1)}>
+              <EntryHeader title={title} subtitle={t(item.role)} date={item.period} fontScale={fontScale} />
+              {institution && <div style={metaText}>{institution}</div>}
+              {description(t(item.description))}
+              {bullets(item.highlights)}
             </div>
-            {getText(item.description, language) && (
-              <div style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary, lineHeight: 1.5, marginTop: "2px" }}>{getText(item.description, language)}</div>
-            )}
-            {item.highlights && item.highlights.length > 0 && (
-              <ul style={{ margin: `${TOKENS.spacing.listTop}px 0 0 0`, paddingLeft: "14px", fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary }}>
-                {item.highlights.map((h, i) => <li key={i} style={{ lineHeight: 1.5 }}>{getText(h, language)}</li>)}
-              </ul>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -140,21 +209,8 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language }: Temp
     if (data.honors.length === 0) return null;
     return (
       <div>
-        <SectionHead title={language === "zh" ? "荣誉奖项" : "Honors & Awards"} />
-        {data.honors.map((h) => (
-          <div key={h.id} style={{ marginBottom: "3px", fontSize: `${TOKENS.fontSize.body}px` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div>
-                <span style={{ fontWeight: 600 }}>{getText(h.title, language)}</span>
-                {h.level && <span style={{ color: C.textMuted, marginLeft: "4px" }}>[{h.level}]</span>}
-              </div>
-              <span style={{ color: C.textMuted, flexShrink: 0 }}>{h.period}</span>
-            </div>
-            {getText(h.description, language) && (
-              <div style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary, lineHeight: 1.5, marginTop: `${TOKENS.spacing.paragraphTop}px` }}>{getText(h.description, language)}</div>
-            )}
-          </div>
-        ))}
+        {sectionHead("honors")}
+        <HonorsGrid honors={data.honors} lang={language} fontScale={fontScale} accentColor={accentColor} lineHeight={LEADING.body} />
       </div>
     );
   };
@@ -163,21 +219,12 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language }: Temp
     if (data.experience.length === 0) return null;
     return (
       <div>
-        <SectionHead title={language === "zh" ? "实习经历" : "Internship"} />
-        {data.experience.map((exp) => (
-          <div key={exp.id} style={{ marginBottom: `${TOKENS.spacing.itemBottom}px` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontWeight: 700, fontSize: `${TOKENS.fontSize.itemTitle}px` }}>{getText(exp.company, language)}<span style={{ fontWeight: 400 }}> · {getText(exp.role, language)}</span></span>
-              <span style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textMuted, flexShrink: 0 }}>{exp.period}</span>
-            </div>
-            {getText(exp.description, language) && (
-              <div style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary, lineHeight: 1.5, marginTop: "2px" }}>{getText(exp.description, language)}</div>
-            )}
-            {exp.highlights && exp.highlights.length > 0 && (
-              <ul style={{ margin: `${TOKENS.spacing.listTop}px 0 0 0`, paddingLeft: "14px", fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary }}>
-                {exp.highlights.map((h, i) => <li key={i} style={{ lineHeight: 1.5 }}>{getText(h, language)}</li>)}
-              </ul>
-            )}
+        {sectionHead("experience")}
+        {data.experience.map((exp, idx) => (
+          <div key={exp.id} style={entryStyle(idx === data.experience.length - 1)}>
+            <EntryHeader title={t(exp.company)} subtitle={t(exp.role)} date={exp.period} fontScale={fontScale} />
+            {description(t(exp.description))}
+            {bullets(exp.highlights)}
           </div>
         ))}
       </div>
@@ -188,31 +235,22 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language }: Temp
     if (!data.projects || data.projects.length === 0) return null;
     return (
       <div>
-        <SectionHead title={language === "zh" ? "项目经历" : "Projects"} />
-        {data.projects.map((proj) => (
-          <div key={proj.id} style={{ marginBottom: `${TOKENS.spacing.itemBottom}px` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontWeight: 700, fontSize: `${TOKENS.fontSize.itemTitle}px` }}>{getText(proj.name, language)}{getText(proj.role, language) ? <span style={{ fontWeight: 400 }}> · {getText(proj.role, language)}</span> : null}</span>
-              {proj.period && <span style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textMuted, flexShrink: 0 }}>{proj.period}</span>}
+        {sectionHead("projects")}
+        {data.projects.map((proj, idx) => {
+          const meta = projectMeta(proj);
+          return (
+            <div key={proj.id} style={entryStyle(idx === data.projects.length - 1)}>
+              <EntryHeader title={t(proj.name)} subtitle={t(proj.role)} date={proj.period} fontScale={fontScale} />
+              {meta.length > 0 && (
+                <div style={metaText}>
+                  <InlineList items={meta} separator="|" separatorColor={INK.rule} gap={7} />
+                </div>
+              )}
+              {description(t(proj.description))}
+              {bullets(proj.highlights)}
             </div>
-            {proj.link && (
-              <div style={{ fontSize: "10px", color: C.textMuted, marginTop: "1px" }}>{proj.link}</div>
-            )}
-            {proj.tech.length > 0 && (
-              <div style={{ fontSize: `${TOKENS.fontSize.tag}px`, color: C.textSecondary, marginTop: "2px" }}>
-                {proj.tech.join(" · ")}
-              </div>
-            )}
-            {getText(proj.description, language) && (
-              <div style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary, lineHeight: 1.5, marginTop: "2px" }}>{getText(proj.description, language)}</div>
-            )}
-            {proj.highlights && proj.highlights.length > 0 && (
-              <ul style={{ margin: `${TOKENS.spacing.listTop}px 0 0 0`, paddingLeft: "14px", fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary }}>
-                {proj.highlights.map((h, i) => <li key={i} style={{ lineHeight: 1.5 }}>{getText(h, language)}</li>)}
-              </ul>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -221,21 +259,12 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language }: Temp
     if (data.campusActivities.length === 0) return null;
     return (
       <div>
-        <SectionHead title={language === "zh" ? "校园经历" : "Campus Activities"} />
-        {data.campusActivities.map((act) => (
-          <div key={act.id} style={{ marginBottom: "5px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontWeight: 700, fontSize: `${TOKENS.fontSize.itemTitle}px` }}>{getText(act.organization, language)}<span style={{ fontWeight: 400 }}> · {getText(act.role, language)}</span></span>
-              <span style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textMuted, flexShrink: 0 }}>{act.period}</span>
-            </div>
-            {getText(act.description, language) && (
-              <div style={{ fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary, lineHeight: 1.5, marginTop: "2px" }}>{getText(act.description, language)}</div>
-            )}
-            {act.highlights && act.highlights.length > 0 && (
-              <ul style={{ margin: `${TOKENS.spacing.listTop}px 0 0 0`, paddingLeft: "14px", fontSize: `${TOKENS.fontSize.body}px`, color: C.textSecondary }}>
-                {act.highlights.map((h, i) => <li key={i} style={{ lineHeight: 1.5 }}>{getText(h, language)}</li>)}
-              </ul>
-            )}
+        {sectionHead("campusActivities")}
+        {data.campusActivities.map((act, idx) => (
+          <div key={act.id} style={entryStyle(idx === data.campusActivities.length - 1)}>
+            <EntryHeader title={t(act.organization)} subtitle={t(act.role)} date={act.period} fontScale={fontScale} />
+            {description(t(act.description))}
+            {bullets(act.highlights)}
           </div>
         ))}
       </div>
@@ -246,13 +275,16 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language }: Temp
     if (data.skills.length === 0) return null;
     return (
       <div>
-        <SectionHead title={language === "zh" ? "技能特长" : "Skills"} />
-        {data.skills.map((cat) => (
-          <div key={cat.id} style={{ marginBottom: "3px", fontSize: `${TOKENS.fontSize.body}px` }}>
-            <span style={{ fontWeight: 600 }}>{getText(cat.category, language)}：</span>
-            <span style={{ color: C.textSecondary }}>{cat.items.join(" | ")}</span>
-          </div>
-        ))}
+        {sectionHead("skills")}
+        <SkillsGrid
+          skills={data.skills}
+          lang={language}
+          fontSize={10.2}
+          fontScale={fontScale}
+          lineHeight={LEADING.body}
+          columnGap={18}
+          twoColumnMaxEm={31}
+        />
       </div>
     );
   };
@@ -269,7 +301,16 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language }: Temp
   };
 
   return (
-    <div style={{ ...RESUME_TEMPLATE_ROOT_STYLE, padding: `${TOKENS.page.padding.classic.top}px ${TOKENS.page.padding.classic.right}px ${TOKENS.page.padding.classic.bottom}px ${TOKENS.page.padding.classic.left}px`, fontFamily: TOKENS.fontFamily, lineHeight: 1.5, color: C.text, background: "#ffffff" }}>
+    <div
+      style={{
+        ...RESUME_TEMPLATE_ROOT_STYLE,
+        padding: `${PAGE.top}px ${PAGE.right}px ${PAGE.bottom}px ${PAGE.left}px`,
+        fontFamily: FONT_FAMILY,
+        lineHeight: 1.5,
+        color: INK.strong,
+        background: "#ffffff",
+      }}
+    >
       {visibleSections.map((key) => (
         <div key={key}>{sectionRenderers[key]?.()}</div>
       ))}
