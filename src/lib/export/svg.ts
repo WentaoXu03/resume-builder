@@ -29,7 +29,7 @@ function schoolHeading(edu: Education, language: "zh" | "en", fontSize: number, 
   if (!school) return "";
   const tier = normalizeSchoolTier(edu.schoolTier);
   return `<tspan font-weight="700">${esc(school)}</tspan>` + (tier
-    ? `<tspan data-school-tier="${tier}" dx="5" font-size="${fontSize}" font-weight="400" fill="${color}">${tier}</tspan>`
+    ? `<tspan data-school-tier="${tier}" dx="5" font-size="${fontSize}" font-weight="600" fill="${color}">${tier}</tspan>`
     : "");
 }
 

@@ -38,7 +38,7 @@ function getText(b: { zh: string; en: string } | undefined | null, lang: "zh" | 
 function schoolTierText(edu: Education, language: "zh" | "en", color: string, fontSize = 9) {
   const tier = normalizeSchoolTier(edu.schoolTier);
   if (!tier || !getText(edu.school, language)) return null;
-  return <Text style={{ fontSize, fontWeight: 400, color }}>{` ${tier}`}</Text>;
+  return <Text style={{ fontSize, fontWeight: 600, color }}>{` ${tier}`}</Text>;
 }
 
 const SECTION_LABELS: Record<SectionKey, { zh: string; en: string }> = {

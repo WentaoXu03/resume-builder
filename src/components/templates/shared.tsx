@@ -296,7 +296,7 @@ export function SchoolTierTag({ value, fontScale = 1 }: { value: unknown; fontSc
   if (!tier) return null;
   const ts = createTypeScale(fontScale);
   return (
-    <span data-school-tier={tier} style={{ marginLeft: ts.fs(5), fontSize: ts.meta, fontWeight: 400, color: INK.meta, whiteSpace: "nowrap" }}>
+    <span data-school-tier={tier} style={{ marginLeft: ts.fs(5), fontSize: ts.meta, fontWeight: 600, color: INK.meta, whiteSpace: "nowrap" }}>
       {tier}
     </span>
   );

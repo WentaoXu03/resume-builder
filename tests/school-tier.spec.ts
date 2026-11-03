@@ -92,7 +92,7 @@ for (const template of templates) {
           expect(metrics.fontSize).toBeCloseTo(10 * scale, 2);
           expect(metrics.fontSize).toBeLessThan(metrics.schoolFontSize);
           expect(metrics.color).not.toBe(metrics.schoolColor);
-          expect(metrics.weight).toBe("400");
+          expect(metrics.weight).toBe("600");
           expect(metrics.border).toBe("0px");
           expect(metrics.background).toBe("rgba(0, 0, 0, 0)");
           expect(metrics.marginLeft).toBeCloseTo(5 * scale, 2);
@@ -115,8 +115,8 @@ for (const template of templates) {
     test(`${template} ${language} SVG retains selected school designations only`, () => {
       const options = { template, language, sectionOrder: DEFAULT_SECTION_ORDER, emphasis: {} };
       const svg = generateSVG({ ...options, data: taggedResume() });
-      expect(svg).toMatch(/data-school-tier="985"[^>]*font-weight="400"/);
-      expect(svg).toMatch(/data-school-tier="211"[^>]*font-weight="400"/);
+      expect(svg).toMatch(/data-school-tier="985"[^>]*font-weight="600"/);
+      expect(svg).toMatch(/data-school-tier="211"[^>]*font-weight="600"/);
       expect(generateSVG({ ...options, data: DEMO_RESUME_DATA })).not.toContain("data-school-tier=");
     });
   }
