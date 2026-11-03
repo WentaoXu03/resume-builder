@@ -8,7 +8,7 @@
     "start": "next start -p 3001",
     "lint": "eslint",
     "test:visual": "playwright test tests/visual.spec.ts",
-    "test:export-parity": "playwright test tests/export-parity.spec.ts",
+    "test:export-parity": "playwright test tests/export-parity.spec.ts tests/highlights.spec.ts tests/education-activities.spec.ts tests/school-tier.spec.ts",
     "test:ai": "playwright test tests/ai-assistant.spec.ts",
     "test:visual:update": "playwright test tests/visual.spec.ts --update-snapshots"
   },

@@ -113,14 +113,14 @@ test("hide campus activities", async ({ page }) => {
   await page.getByRole("button", { name: /布局|Layout/i }).click();
 
   await page
-    .getByRole("button", { name: /隐藏 校园经历|Hide Campus Activities/i })
+    .getByRole("button", { name: /隐藏 活动经历|Hide Activities/i })
     .click();
 
   await page.reload();
   await hideNextDevTools(page);
 
   const preview = page.locator("#resume-preview");
-  await expect(preview).not.toContainText("校园经历");
-  await expect(preview).not.toContainText("Campus Activities");
+  await expect(preview).not.toContainText("活动经历");
+  await expect(preview).not.toContainText("Activities");
   await expect(preview).toHaveScreenshot("layout-hidden-campus.png");
 });

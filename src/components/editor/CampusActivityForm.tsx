@@ -20,7 +20,7 @@ export function CampusActivityForm() {
 
       {(data.campusActivities?.length ?? 0) === 0 && (
         <p className="text-sm text-[var(--color-text-muted)] text-center py-8">
-          暂无校园经历，点击上方按钮添加
+          暂无活动经历，点击上方按钮添加
         </p>
       )}
 

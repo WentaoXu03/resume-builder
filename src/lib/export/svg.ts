@@ -1,4 +1,5 @@
-import type { ResumeData, SectionKey, SectionEmphasis } from "@/types";
+import type { Education, ResumeData, SectionKey, SectionEmphasis } from "@/types";
+import { normalizeSchoolTier } from "@/types";
 
 interface SVGExportOptions {
   data: ResumeData;
@@ -23,6 +24,15 @@ function getText(b: { zh: string; en: string } | undefined | null, lang: "zh" | 
   return raw.replace(/\*\*([^*\n]+?)\*\*/g, "$1");
 }
 
+function schoolHeading(edu: Education, language: "zh" | "en", fontSize: number, color: string): string {
+  const school = getText(edu.school, language);
+  if (!school) return "";
+  const tier = normalizeSchoolTier(edu.schoolTier);
+  return `<tspan font-weight="700">${esc(school)}</tspan>` + (tier
+    ? `<tspan data-school-tier="${tier}" dx="5" font-size="${fontSize}" font-weight="400" fill="${color}">${tier}</tspan>`
+    : "");
+}
+
 const SECTION_LABELS: Record<SectionKey, { zh: string; en: string }> = {
   personalInfo: { zh: "基本信息", en: "Personal Info" },
   education: { zh: "教育背景", en: "Education" },
@@ -30,7 +40,7 @@ const SECTION_LABELS: Record<SectionKey, { zh: string; en: string }> = {
   honors: { zh: "荣誉奖项", en: "Honors & Awards" },
   experience: { zh: "实习经历", en: "Internship" },
   projects: { zh: "项目经历", en: "Projects" },
-  campusActivities: { zh: "校园经历", en: "Campus Activities" },
+  campusActivities: { zh: "活动经历", en: "Activities" },
   skills: { zh: "技能特长", en: "Skills" },
 };
 
@@ -101,13 +111,13 @@ function generateClassicSVG(data: ResumeData, sections: SectionKey[], emphasis: 
       els.push(`<line x1="${P}" y1="${y}" x2="${W - P}" y2="${y}" stroke="${C.line}" stroke-width="1.5"/>`);
       y += 12;
       for (const edu of data.education) {
-        const parts = [getText(edu.school, language), getText(edu.major, language), getText(edu.degree, language)].filter(Boolean);
-        els.push(`<text x="${P}" y="${y}" font-size="12" font-weight="700" fill="${C.text}" font-family="${FONT}">${esc(parts.join(" · "))}</text>`);
+        const parts = [getText(edu.major, language), getText(edu.degree, language)].filter(Boolean);
+        const school = schoolHeading(edu, language, 10, C.muted);
+        els.push(`<text x="${P}" y="${y}" font-size="12" font-weight="700" fill="${C.text}" font-family="${FONT}">${school}${parts.length ? `${school ? " · " : ""}${esc(parts.join(" · "))}` : ""}</text>`);
         if (edu.period) els.push(`<text x="${W - P}" y="${y}" text-anchor="end" font-size="11" fill="${C.muted}" font-family="${FONT}">${esc(edu.period)}</text>`);
         y += 17;
         const details: string[] = [];
         if (edu.gpa) details.push(`GPA: ${edu.gpa}`);
-        if (edu.courses?.length) details.push(`${language === "zh" ? "主修" : "Core"}: ${edu.courses.join("、")}`);
         if (details.length > 0) { els.push(`<text x="${P}" y="${y}" font-size="11" fill="${C.sec}" font-family="${FONT}">${esc(details.join(" | "))}</text>`); y += 16; }
         y += 4;
       }
@@ -248,16 +258,14 @@ function generateModernSVG(data: ResumeData, sections: SectionKey[], emphasis: P
 
     if (key === "education" && data.education?.length) {
       for (const edu of data.education) {
-        const parts = [getText(edu.school, language), getText(edu.degree, language), getText(edu.major, language)].filter(Boolean);
-        mainEls.push(`<text x="${SW + MP}" y="${my}" font-size="11" font-weight="700" fill="${MC.text}" font-family="${FONT}">${esc(parts.join(" · "))}</text>`);
+        const parts = [getText(edu.degree, language), getText(edu.major, language)].filter(Boolean);
+        const school = schoolHeading(edu, language, 9.5, MC.muted);
+        mainEls.push(`<text x="${SW + MP}" y="${my}" font-size="11" font-weight="700" fill="${MC.text}" font-family="${FONT}">${school}${parts.length ? `${school ? " · " : ""}${esc(parts.join(" · "))}` : ""}</text>`);
         if (edu.period) mainEls.push(`<text x="${W - MP}" y="${my}" text-anchor="end" font-size="10" fill="${MC.muted}" font-family="${FONT}">${esc(edu.period)}</text>`);
         my += 16;
-        if (edu.courses?.length) {
-          for (let i = 0; i < edu.courses.length; i += 4) {
-            const chunk = edu.courses.slice(i, i + 4).join(" · ");
-            mainEls.push(`<text x="${SW + MP + 4}" y="${my}" font-size="9" fill="${MC.sec}" font-family="${FONT}">${esc(chunk)}</text>`);
-            my += 13;
-          }
+        if (edu.gpa) {
+          mainEls.push(`<text x="${SW + MP}" y="${my}" font-size="10" fill="${MC.sec}" font-family="${FONT}">GPA: ${esc(edu.gpa)}</text>`);
+          my += 15;
         }
         my += 6;
       }
@@ -345,12 +353,12 @@ function generateMinimalSVG(data: ResumeData, sections: SectionKey[], emphasis: 
         for (const edu of data.education) {
           y += 6;
           const parts = [getText(edu.degree, language), getText(edu.major, language)].filter(Boolean);
-          els.push(`<text x="${P}" y="${y}" font-size="11" fill="${C.text}" font-family="${FONT}"><tspan font-weight="700">${esc(getText(edu.school, language))}</tspan>${parts.length ? `<tspan fill="${C.sec}"> · ${esc(parts.join(" · "))}</tspan>` : ""}</text>`);
+          const school = schoolHeading(edu, language, 9.5, C.muted);
+          els.push(`<text x="${P}" y="${y}" font-size="11" fill="${C.text}" font-family="${FONT}">${school}${parts.length ? `<tspan fill="${C.sec}">${school ? " · " : ""}${esc(parts.join(" · "))}</tspan>` : ""}</text>`);
           if (edu.period) els.push(`<text x="${W - P}" y="${y}" text-anchor="end" font-size="10" fill="${C.muted}" font-family="${FONT}">${esc(edu.period)}</text>`);
           y += 16;
           const ds: string[] = [];
           if (edu.gpa) ds.push(`GPA: ${edu.gpa}`);
-          if (edu.courses?.length) ds.push(`${language === "zh" ? "课程" : "Courses"}: ${edu.courses.join(", ")}`);
           if (ds.length) { els.push(`<text x="${P}" y="${y}" font-size="10" fill="${C.muted}" font-family="${FONT}">${esc(ds.join("; "))}</text>`); y += 16; }
         }
       } else if (key === "honors" && data.honors?.length) {
@@ -438,14 +446,14 @@ function generateCompactSVG(data: ResumeData, sections: SectionKey[], emphasis: 
 
       if (key === "education" && data.education?.length) {
         for (const edu of data.education) {
-          const parts = [getText(edu.school, language), getText(edu.degree, language), getText(edu.major, language)].filter(Boolean);
-          els.push(`<text x="${P}" y="${y}" font-size="10.5" font-weight="700" fill="${C.text}" font-family="${FONT}">${esc(parts.join(" · "))}</text>`);
+          const parts = [getText(edu.degree, language), getText(edu.major, language)].filter(Boolean);
+          const school = schoolHeading(edu, language, 9, C.muted);
+          els.push(`<text x="${P}" y="${y}" font-size="10.5" font-weight="700" fill="${C.text}" font-family="${FONT}">${school}${parts.length ? `${school ? " · " : ""}${esc(parts.join(" · "))}` : ""}</text>`);
           if (edu.period) els.push(`<text x="${W - P}" y="${y}" text-anchor="end" font-size="10" fill="${C.muted}" font-family="${FONT}">${esc(edu.period)}</text>`);
           y += 16;
-          if (edu.gpa || edu.courses?.length) {
+          if (edu.gpa) {
             const ds: string[] = [];
             if (edu.gpa) ds.push(`GPA: ${edu.gpa}`);
-            if (edu.courses?.length) ds.push(`${language === "zh" ? "核心课程" : "Core"}: ${edu.courses.join(", ")}`);
             els.push(`<text x="${P}" y="${y}" font-size="10" fill="${C.sec}" font-family="${FONT}">${esc(ds.join(" "))}</text>`);
             y += 15;
           }
@@ -462,7 +470,7 @@ function generateCompactSVG(data: ResumeData, sections: SectionKey[], emphasis: 
           els.push(`<text x="${P}" y="${y}" font-size="10.5" font-weight="700" fill="${C.text}" font-family="${FONT}">${esc(getText(exp.company, language))} · ${esc(getText(exp.role, language))}</text>`);
           if (exp.period) els.push(`<text x="${W - P}" y="${y}" text-anchor="end" font-size="10" fill="${C.muted}" font-family="${FONT}">${esc(exp.period)}</text>`);
           y += 16;
-          if (exp.highlights?.length) { for (const h of exp.highlights.slice(0, 3)) { els.push(`<text x="${P + 14}" y="${y}" font-size="10.5" fill="${C.sec}" font-family="${FONT}">• ${esc(getText(h, language))}</text>`); y += 16; } }
+          if (exp.highlights?.length) { for (const h of exp.highlights) { els.push(`<text x="${P + 14}" y="${y}" font-size="10.5" fill="${C.sec}" font-family="${FONT}">• ${esc(getText(h, language))}</text>`); y += 16; } }
           y += 2;
         }
       } else if (key === "projects" && data.projects?.length) {
@@ -480,7 +488,7 @@ function generateCompactSVG(data: ResumeData, sections: SectionKey[], emphasis: 
           els.push(`<text x="${P}" y="${y}" font-size="10.5" font-weight="700" fill="${C.text}" font-family="${FONT}">${esc(getText(act.organization, language))} · ${esc(getText(act.role, language))}</text>`);
           if (act.period) els.push(`<text x="${W - P}" y="${y}" text-anchor="end" font-size="10" fill="${C.muted}" font-family="${FONT}">${esc(act.period)}</text>`);
           y += 16;
-          if (act.highlights?.length) { for (const h of act.highlights.slice(0, 2)) { els.push(`<text x="${P + 14}" y="${y}" font-size="10.5" fill="${C.sec}" font-family="${FONT}">• ${esc(getText(h, language))}</text>`); y += 16; } }
+          if (act.highlights?.length) { for (const h of act.highlights) { els.push(`<text x="${P + 14}" y="${y}" font-size="10.5" fill="${C.sec}" font-family="${FONT}">• ${esc(getText(h, language))}</text>`); y += 16; } }
           y += 2;
         }
       } else if (key === "skills" && data.skills?.length) {

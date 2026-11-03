@@ -13,6 +13,7 @@ import {
   LEADING,
   NUMERIC,
   PhotoSlot,
+  SchoolTierTag,
   SkillsGrid,
   createTypeScale,
   displayUrl,
@@ -45,7 +46,7 @@ interface TemplateProps {
 const PAGE = { top: 28, right: 36, bottom: 26, left: 36 };
 const PHOTO = { width: 88, height: 120 };
 const BASE_GUTTER_PX = 88;
-const BASE_SPACE = { section: 10, entry: 7, line: 1.5 };
+const BASE_SPACE = { section: 10, entry: 8.4, line: 3 };
 
 export function MinimalTemplate({ data, sectionOrder, emphasis, language, fontScale = 1, accentColor }: TemplateProps) {
   const t = (b: Parameters<typeof pickText>[0]) => pickText(b, language);
@@ -55,7 +56,7 @@ export function MinimalTemplate({ data, sectionOrder, emphasis, language, fontSc
   const SPACE = {
     section: ts.sp(BASE_SPACE.section),
     entry: ts.sp(BASE_SPACE.entry),
-    line: BASE_SPACE.line,
+    line: ts.fs(BASE_SPACE.line),
   };
 
   const normalizedSectionOrder = normalizeSectionOrder(sectionOrder);
@@ -105,7 +106,7 @@ export function MinimalTemplate({ data, sectionOrder, emphasis, language, fontSc
       markerColor={palette.marker}
       indent={12}
       fontScale={fontScale}
-      style={{ ...bodyText, marginTop: SPACE.line }}
+      style={{ ...bodyText, marginTop: SPACE.line * 1.1 }}
     />
   );
 
@@ -167,11 +168,12 @@ export function MinimalTemplate({ data, sectionOrder, emphasis, language, fontSc
     return sectionRow(
       "education",
       data.education.map((edu, idx) => {
-        const meta = educationMeta(edu, language);
+        const meta = educationMeta(edu);
         return (
           <div key={edu.id} style={entryStyle(idx === data.education.length - 1)}>
             <EntryHeader
               title={t(edu.school)}
+              titleSuffix={<SchoolTierTag value={edu.schoolTier} fontScale={fontScale} />}
               subtitle={[t(edu.major), t(edu.degree)].filter(Boolean).join(" · ")}
               date={edu.period}
               fontScale={fontScale}

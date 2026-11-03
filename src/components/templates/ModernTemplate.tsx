@@ -13,6 +13,7 @@ import {
   LEADING,
   NUMERIC,
   PhotoSlot,
+  SchoolTierTag,
   createTypeScale,
   displayUrl,
   educationMeta,
@@ -40,7 +41,7 @@ interface TemplateProps {
  */
 const PHOTO = { width: 86, height: 118 };
 const MAIN_PAD = { top: 26, right: 28, bottom: 24, left: 26 };
-const BASE_SPACE = { section: 12, headToBody: 6, entry: 8, line: 2 };
+const BASE_SPACE = { section: 12, headToBody: 6, entry: 9.6, line: 3 };
 
 export function ModernTemplate({
   data,
@@ -67,7 +68,7 @@ export function ModernTemplate({
     section: ts.sp(BASE_SPACE.section),
     headToBody: ts.sp(BASE_SPACE.headToBody),
     entry: ts.sp(BASE_SPACE.entry),
-    line: BASE_SPACE.line,
+    line: ts.fs(BASE_SPACE.line),
   };
   const normalizedSectionOrder = normalizeSectionOrder(sectionOrder);
 
@@ -188,13 +189,13 @@ export function ModernTemplate({
     return (
       <div>
         {renderSidebarHeading(sectionLabel("skills", language))}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: ts.sp(9.6) }}>
           {data.skills.map((cat) => (
             <div key={cat.id}>
-              <div style={{ fontSize: ts.fs(11), fontWeight: 600, color: SIDEBAR.text, marginBottom: 3, lineHeight: 1.3 }}>
+              <div style={{ fontSize: ts.fs(11), fontWeight: 600, color: SIDEBAR.text, marginBottom: ts.fs(3.6), lineHeight: 1.3 }}>
                 {t(cat.category)}
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", columnGap: 4, rowGap: ts.fs(4.8) }}>
                 {cat.items.map((item, i) => (
                   <span
                     key={i}
@@ -263,7 +264,7 @@ export function ModernTemplate({
       items={(items ?? []).map(t)}
       markerColor={palette.marker}
       fontScale={fontScale}
-      style={{ ...bodyText, marginTop: SPACE.line }}
+      style={{ ...bodyText, marginTop: SPACE.line * 1.1 }}
     />
   );
 
@@ -273,11 +274,12 @@ export function ModernTemplate({
       <div>
         {renderMainSectionHeader("education", first)}
         {data.education.map((edu, idx) => {
-          const meta = educationMeta(edu, language, { color: ACCENT });
+          const meta = educationMeta(edu, { color: ACCENT });
           return (
             <div key={edu.id} style={entryStyle(idx === data.education.length - 1)}>
               <EntryHeader
                 title={t(edu.school)}
+                titleSuffix={<SchoolTierTag value={edu.schoolTier} fontScale={fontScale} />}
                 subtitle={[t(edu.major), t(edu.degree)].filter(Boolean).join(" · ")}
                 date={edu.period}
                 fontScale={fontScale}

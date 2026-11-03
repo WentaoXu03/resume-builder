@@ -12,6 +12,7 @@ import {
   InlineList,
   NUMERIC,
   PhotoSlot,
+  SchoolTierTag,
   SkillsGrid,
   createTypeScale,
   displayUrl,
@@ -42,15 +43,10 @@ interface TemplateProps {
  *
  * Photo slot: compact 1-inch ID photo converted to A4 (80×110px).
  */
-const MAX_COMPACT_HIGHLIGHTS = 3;
 const PAGE = { top: 22, right: 30, bottom: 20, left: 30 };
 const PHOTO = { width: 80, height: 110 };
-const BASE_SPACE = { section: 7, headToBody: 4, entry: 5, line: 1 };
+const BASE_SPACE = { section: 7, headToBody: 4, entry: 6, line: 3 };
 const COMPACT_LEADING = 1.42;
-
-function getCompactHighlights(highlights: BilingualText[] = []) {
-  return highlights.slice(0, MAX_COMPACT_HIGHLIGHTS);
-}
 
 export function CompactTemplate({ data, sectionOrder, emphasis, language, fontScale = 1, accentColor }: TemplateProps) {
   const t = (b: Parameters<typeof pickText>[0]) => pickText(b, language);
@@ -60,7 +56,7 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language, fontSc
     section: ts.sp(BASE_SPACE.section),
     headToBody: ts.sp(BASE_SPACE.headToBody),
     entry: ts.sp(BASE_SPACE.entry),
-    line: BASE_SPACE.line,
+    line: ts.fs(BASE_SPACE.line),
   };
 
   const normalizedSectionOrder = normalizeSectionOrder(sectionOrder);
@@ -98,11 +94,11 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language, fontSc
 
   const bullets = (items: BilingualText[] | undefined) => (
     <Bullets
-      items={getCompactHighlights(items).map(t)}
+      items={(items ?? []).map(t)}
       markerColor={palette.marker}
       indent={10}
       fontScale={fontScale}
-      style={{ ...bodyText, marginTop: SPACE.line }}
+      style={{ ...bodyText, marginTop: SPACE.line * 1.1 }}
     />
   );
 
@@ -175,11 +171,12 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language, fontSc
       <div>
         {renderSectionHeader("education")}
         {data.education.map((edu, idx) => {
-          const meta = educationMeta(edu, language);
+          const meta = educationMeta(edu);
           return (
             <div key={edu.id} style={entryStyle(idx === data.education.length - 1)}>
               <EntryHeader
                 title={t(edu.school)}
+                titleSuffix={<SchoolTierTag value={edu.schoolTier} fontScale={fontScale} />}
                 subtitle={[t(edu.major), t(edu.degree)].filter(Boolean).join(" · ")}
                 date={edu.period}
                 fontScale={fontScale}
@@ -238,7 +235,7 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language, fontSc
           fontScale={fontScale}
           accentColor={accentColor}
           lineHeight={COMPACT_LEADING}
-          rowGap={1.5}
+          rowGap={1.8}
           columnGap={24}
         />
       </div>
@@ -333,7 +330,7 @@ export function CompactTemplate({ data, sectionOrder, emphasis, language, fontSc
           fontSize={10.5}
           fontScale={fontScale}
           lineHeight={COMPACT_LEADING}
-          rowGap={1.5}
+          rowGap={1.8}
           columnGap={20}
           twoColumnMaxEm={31}
         />

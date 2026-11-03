@@ -2,7 +2,7 @@
 
 import { useResumeStore } from "@/store/useResumeStore";
 import t from "@/lib/i18n";
-import { TagInput } from "@/components/ui/TagInput";
+import { normalizeSchoolTier } from "@/types";
 
 export function EducationForm() {
   const { data, addEducation, updateEducation, removeEducation } = useResumeStore();
@@ -52,6 +52,20 @@ export function EducationForm() {
                 className="field-input"
               />
             </div>
+          </div>
+
+          <div className="mb-3 max-w-[220px]">
+            <label htmlFor={`school-tier-${edu.id}`} className="field-label">{t("education.schoolTier")}</label>
+            <select
+              id={`school-tier-${edu.id}`}
+              value={edu.schoolTier ?? ""}
+              onChange={(event) => updateEducation(edu.id, { schoolTier: normalizeSchoolTier(event.target.value) })}
+              className="field-input"
+            >
+              <option value="">{t("education.schoolTierNone")}</option>
+              <option value="985">985</option>
+              <option value="211">211</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-3">
@@ -121,16 +135,6 @@ export function EducationForm() {
                 placeholder="3.8/4.0 或 前5%"
               />
             </div>
-          </div>
-
-          <div className="mb-3">
-            <TagInput
-              label={t("education.courses")}
-              value={edu.courses}
-              onChange={(courses) => updateEducation(edu.id, { courses })}
-              placeholder="例如：数据结构 / 计算机网络 / 操作系统"
-              emptyText="暂无课程，点击添加一项"
-            />
           </div>
 
           <div className="mb-3">

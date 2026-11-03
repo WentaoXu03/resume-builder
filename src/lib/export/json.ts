@@ -1,5 +1,5 @@
 import type { ResumeData } from "@/types";
-import { DEFAULT_RESUME_DATA } from "@/types";
+import { DEFAULT_RESUME_DATA, normalizeSchoolTier } from "@/types";
 
 export function exportToJSON(data: ResumeData): string {
   return JSON.stringify(data, null, 2);
@@ -13,11 +13,11 @@ function mergeWithDefaults(data: Partial<ResumeData>): ResumeData {
       ...defaults.education[0],
       id: edu.id || "",
       school: edu.school || { zh: "", en: "" },
+      schoolTier: normalizeSchoolTier(edu.schoolTier),
       degree: edu.degree || { zh: "", en: "" },
       major: edu.major || { zh: "", en: "" },
       period: edu.period || "",
       gpa: edu.gpa || "",
-      courses: edu.courses || [],
       description: edu.description || { zh: "", en: "" },
     })) : [],
     honors: Array.isArray(data.honors) ? data.honors.map((h) => ({

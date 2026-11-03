@@ -18,7 +18,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import type { AccentColor, BilingualText } from "@/types";
-import { clampFontScale, normalizeAccentColor } from "@/types";
+import { clampFontScale, normalizeAccentColor, normalizeSchoolTier } from "@/types";
 
 export type Lang = "zh" | "en";
 
@@ -247,7 +247,7 @@ export function Bullets({
   return (
     <ul style={{ listStyle: "none", margin: 0, padding: 0, ...style }}>
       {visible.map((text, i) => (
-        <li key={i} style={{ display: "flex", alignItems: "baseline" }}>
+        <li key={i} style={{ display: "flex", alignItems: "baseline", marginTop: i === 0 ? 0 : "0.22em" }}>
           <span aria-hidden="true" style={{ flex: `0 0 ${scaledIndent}px`, color: markerColor }}>
             {marker}
           </span>
@@ -290,12 +290,22 @@ export function InlineList({
   );
 }
 
-/**
- * One-line entry header: bold title + regular subtitle on the left edge,
- * date on the right edge (tabular, never wraps).
- */
+/** Optional school designation, set in the template's muted metadata typography. */
+export function SchoolTierTag({ value, fontScale = 1 }: { value: unknown; fontScale?: number }) {
+  const tier = normalizeSchoolTier(value);
+  if (!tier) return null;
+  const ts = createTypeScale(fontScale);
+  return (
+    <span data-school-tier={tier} style={{ marginLeft: ts.fs(5), fontSize: ts.meta, fontWeight: 400, color: INK.meta, whiteSpace: "nowrap" }}>
+      {tier}
+    </span>
+  );
+}
+
+/** One-line entry header with optional title suffix and a right-aligned date. */
 export function EntryHeader({
   title,
+  titleSuffix,
   subtitle,
   date,
   fontScale = 1,
@@ -305,6 +315,7 @@ export function EntryHeader({
   separator = " · ",
 }: {
   title: string;
+  titleSuffix?: ReactNode;
   subtitle?: string;
   date?: string;
   fontScale?: number;
@@ -318,6 +329,7 @@ export function EntryHeader({
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, lineHeight: LEADING.title }}>
       <div style={{ minWidth: 0 }}>
         <span style={{ fontWeight: 700, fontSize: ts.entryTitle, color: INK.strong, ...titleStyle }}>{stripMarkdownBold(title)}</span>
+        {title ? titleSuffix : null}
         {subtitle && (
           <span style={{ fontWeight: 400, fontSize: ts.entryTitle, color: INK.body, ...subtitleStyle }}>
             {title ? separator : ""}
@@ -431,7 +443,7 @@ export const SECTION_LABELS: Record<string, BilingualText> = {
   honors: { zh: "荣誉奖项", en: "Honors & Awards" },
   experience: { zh: "实习经历", en: "Experience" },
   projects: { zh: "项目经历", en: "Projects" },
-  campusActivities: { zh: "校园经历", en: "Campus Activities" },
+  campusActivities: { zh: "活动经历", en: "Activities" },
   skills: { zh: "技能特长", en: "Skills" },
 };
 
@@ -439,10 +451,9 @@ export function sectionLabel(key: string, lang: Lang): string {
   return pickText(SECTION_LABELS[key], lang) || key;
 }
 
-/** Education meta line pieces: supports `**...**` bold syntax in both GPA and coursework. */
+/** Education GPA metadata, with support for `**...**` bold syntax. */
 export function educationMeta(
-  edu: { gpa: string; courses: string[] },
-  lang: Lang,
+  edu: { gpa: string },
   gpaStyle?: CSSProperties,
 ): ReactNode[] {
   const parts: ReactNode[] = [];
@@ -450,14 +461,6 @@ export function educationMeta(
     parts.push(
       <span key="gpa">
         GPA {emphasizeMetrics(edu.gpa, gpaStyle)}
-      </span>,
-    );
-  }
-  if (edu.courses && edu.courses.length > 0) {
-    parts.push(
-      <span key="courses">
-        {lang === "zh" ? "主修课程：" : "Coursework: "}
-        {emphasizeMetrics(edu.courses.join(lang === "zh" ? "、" : ", "))}
       </span>,
     );
   }
@@ -534,7 +537,7 @@ export function SkillsGrid({
   lineHeight = 1.5,
   labelColor = INK.strong,
   itemColor = INK.body,
-  rowGap = 2,
+  rowGap = 2.4,
   columnGap = 24,
   twoColumnMaxEm,
 }: {
@@ -564,7 +567,7 @@ export function SkillsGrid({
       }}
     >
       {columns.map((col, ci) => (
-        <div key={ci} style={{ display: "grid", gridTemplateColumns: "auto 1fr", columnGap: 9, rowGap, alignContent: "start" }}>
+        <div key={ci} style={{ display: "grid", gridTemplateColumns: "auto 1fr", columnGap: 9, rowGap: ts.fs(rowGap), alignContent: "start" }}>
           {col.map((cat) => (
             <div key={cat.id} style={{ display: "contents" }}>
               <span style={{ fontWeight: 600, color: labelColor, whiteSpace: "nowrap" }}>{stripMarkdownBold(pickText(cat.category, lang))}</span>
@@ -593,7 +596,7 @@ export function HonorsGrid({
   titleColor = INK.strong,
   dateStyle,
   tagStyle,
-  rowGap = 2,
+  rowGap = 2.4,
   columnGap = 28,
   twoColumnMaxEm,
 }: {
@@ -619,7 +622,7 @@ export function HonorsGrid({
         display: "grid",
         gridTemplateColumns: twoCol ? "1fr 1fr" : "1fr",
         columnGap,
-        rowGap,
+        rowGap: ts.fs(rowGap),
         fontSize: ts.fs(fontSize),
         lineHeight,
       }}
@@ -636,7 +639,7 @@ export function HonorsGrid({
             )}
           </div>
           {pickText(h.description, lang) && (
-            <div style={{ color: INK.body, marginTop: 1 }}>{emphasizeMetrics(pickText(h.description, lang))}</div>
+            <div style={{ color: INK.body, marginTop: ts.fs(3) }}>{emphasizeMetrics(pickText(h.description, lang))}</div>
           )}
         </div>
       ))}

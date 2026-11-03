@@ -9,7 +9,8 @@ import {
   Font,
   Image,
 } from "@react-pdf/renderer";
-import type { ResumeData, SectionKey, SectionEmphasis, TemplateName } from "@/types";
+import type { Education, ResumeData, SectionKey, SectionEmphasis, TemplateName } from "@/types";
+import { normalizeSchoolTier } from "@/types";
 import { RESUME_TOKENS } from "@/lib/templates/designTokens";
 
 Font.register({
@@ -34,6 +35,12 @@ function getText(b: { zh: string; en: string } | undefined | null, lang: "zh" | 
   return raw.replace(/\*\*([^*\n]+?)\*\*/g, "$1");
 }
 
+function schoolTierText(edu: Education, language: "zh" | "en", color: string, fontSize = 9) {
+  const tier = normalizeSchoolTier(edu.schoolTier);
+  if (!tier || !getText(edu.school, language)) return null;
+  return <Text style={{ fontSize, fontWeight: 400, color }}>{` ${tier}`}</Text>;
+}
+
 const SECTION_LABELS: Record<SectionKey, { zh: string; en: string }> = {
   personalInfo: { zh: "基本信息", en: "Personal Info" },
   education: { zh: "教育背景", en: "Education" },
@@ -41,7 +48,7 @@ const SECTION_LABELS: Record<SectionKey, { zh: string; en: string }> = {
   honors: { zh: "荣誉奖项", en: "Honors & Awards" },
   experience: { zh: "实习经历", en: "Internship" },
   projects: { zh: "项目经历", en: "Projects" },
-  campusActivities: { zh: "校园经历", en: "Campus Activities" },
+  campusActivities: { zh: "活动经历", en: "Activities" },
   skills: { zh: "技能特长", en: "Skills" },
 };
 
@@ -119,11 +126,11 @@ function createClassicPDF(data: ResumeData, sections: SectionKey[], emphasis: Pa
         {data.education.map((edu) => (
           <View key={edu.id} style={{ marginBottom: 6 }}>
             <View style={s.row}>
-              <Text><Text style={s.bold}>{getText(edu.school, language)}</Text>{getText(edu.major, language) ? <Text style={s.secondary}> · {getText(edu.major, language)}</Text> : null}{getText(edu.degree, language) ? <Text style={s.secondary}> · {getText(edu.degree, language)}</Text> : null}</Text>
+              <Text><Text style={s.bold}>{getText(edu.school, language)}</Text>{schoolTierText(edu, language, C.textMuted)}{getText(edu.major, language) ? <Text style={s.secondary}> · {getText(edu.major, language)}</Text> : null}{getText(edu.degree, language) ? <Text style={s.secondary}> · {getText(edu.degree, language)}</Text> : null}</Text>
               {edu.period ? <Text style={s.muted}>{edu.period}</Text> : null}
             </View>
-            {(edu.gpa || (edu.courses?.length ?? 0) > 0) ? (
-              <Text style={s.secondary}>{edu.gpa ? `GPA: ${edu.gpa}` : ""}{edu.gpa && (edu.courses?.length ?? 0) > 0 ? " | " : ""}{(edu.courses?.length ?? 0) > 0 ? `${language === "zh" ? "主修" : "Core"}: ${edu.courses.join("、")}` : ""}</Text>
+            {edu.gpa ? (
+              <Text style={s.secondary}>GPA: {edu.gpa}</Text>
             ) : null}
             {getText(edu.description, language) ? <Text style={s.body11}>{getText(edu.description, language)}</Text> : null}
           </View>
@@ -342,14 +349,9 @@ function createModernPDF(data: ResumeData, sections: SectionKey[], emphasis: Par
                 {data.education.map((edu) => (
                   <View key={edu.id} style={{ marginBottom: 8 }}>
                     <View style={s.itemRow}>
-                      <Text><Text style={s.mainBold}>{[getText(edu.school, language), getText(edu.degree, language), getText(edu.major, language)].filter(Boolean).join(" · ")}</Text>{edu.gpa ? <Text style={{ fontSize: 10, fontWeight: 700, color: C.accentBlue, marginLeft: 8 }}> GPA: {edu.gpa}</Text> : null}</Text>
+                      <Text><Text style={s.mainBold}>{getText(edu.school, language)}</Text>{schoolTierText(edu, language, C.textMuted)}<Text style={s.mainBold}>{[getText(edu.degree, language), getText(edu.major, language)].filter(Boolean).map((part, index) => `${getText(edu.school, language) || index > 0 ? " · " : ""}${part}`).join("")}</Text>{edu.gpa ? <Text style={{ fontSize: 10, fontWeight: 700, color: C.accentBlue, marginLeft: 8 }}> GPA: {edu.gpa}</Text> : null}</Text>
                       {edu.period ? <Text style={s.mainMuted}>{edu.period}</Text> : null}
                     </View>
-                    {(edu.courses?.length ?? 0) > 0 ? (
-                      <View style={s.tagRow}>
-                        {edu.courses.map((c, i) => <Text key={i} style={s.tag}>{c}</Text>)}
-                      </View>
-                    ) : null}
                     {getText(edu.description, language) ? <Text style={s.mainBody}>{getText(edu.description, language)}</Text> : null}
                   </View>
                 ))}
@@ -522,10 +524,10 @@ function createMinimalPDF(data: ResumeData, sections: SectionKey[], emphasis: Pa
           return (
             <View key={edu.id} style={{ marginTop: 6 }}>
               <View style={s.row}>
-                <Text><Text style={s.bold600}>{getText(edu.school, language)}</Text>{parts.length > 0 ? <Text style={s.secondary}> · {parts.join(" · ")}</Text> : null}</Text>
+                <Text><Text style={s.bold600}>{getText(edu.school, language)}</Text>{schoolTierText(edu, language, C.textMuted)}{parts.length > 0 ? <Text style={s.secondary}> · {parts.join(" · ")}</Text> : null}</Text>
                 {edu.period ? <Text style={s.muted}>{edu.period}</Text> : null}
               </View>
-              {(edu.gpa || (edu.courses?.length ?? 0) > 0) ? <Text style={s.muted}>{edu.gpa ? `GPA: ${edu.gpa}` : ""}{edu.gpa && (edu.courses?.length ?? 0) > 0 ? "; " : ""}{(edu.courses?.length ?? 0) > 0 ? `${language === "zh" ? "课程" : "Courses"}: ${edu.courses.join(", ")}` : ""}</Text> : null}
+              {edu.gpa ? <Text style={s.muted}>GPA: {edu.gpa}</Text> : null}
               {getText(edu.description, language) ? <Text style={s.body10}>{getText(edu.description, language)}</Text> : null}
             </View>
           );
@@ -676,14 +678,14 @@ function createCompactPDF(data: ResumeData, sections: SectionKey[], emphasis: Pa
       <View>
         <Text style={s.sectionHead}>{label("education", language)}</Text>
         {data.education.map((edu) => {
-          const parts = [getText(edu.school, language), getText(edu.degree, language), getText(edu.major, language)].filter(Boolean);
+          const parts = [getText(edu.degree, language), getText(edu.major, language)].filter(Boolean);
           return (
             <View key={edu.id} style={{ marginBottom: 4 }}>
               <View style={s.row}>
-                <Text style={s.bold600}>{parts.join(" · ")}</Text>
+                <Text style={s.bold600}>{getText(edu.school, language)}{schoolTierText(edu, language, C.textMuted, 8.5)}{parts.length ? `${getText(edu.school, language) ? " · " : ""}${parts.join(" · ")}` : ""}</Text>
                 {edu.period ? <Text style={s.muted}>{edu.period}</Text> : null}
               </View>
-              {(edu.gpa || (edu.courses?.length ?? 0) > 0) ? <Text style={s.secondary}>{edu.gpa ? `GPA: ${edu.gpa}` : ""}{edu.gpa && (edu.courses?.length ?? 0) > 0 ? " " : ""}{(edu.courses?.length ?? 0) > 0 ? `${language === "zh" ? "核心课程" : "Core"}: ${edu.courses.join(", ")}` : ""}</Text> : null}
+              {edu.gpa ? <Text style={s.secondary}>GPA: {edu.gpa}</Text> : null}
               {getText(edu.description, language) ? <Text style={s.secondary}>{getText(edu.description, language)}</Text> : null}
             </View>
           );

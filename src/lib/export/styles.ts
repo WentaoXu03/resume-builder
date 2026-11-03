@@ -6,7 +6,7 @@ export const SECTION_LABELS: Record<string, { zh: string; en: string }> = {
   honors: { zh: "荣誉奖项", en: "Honors & Awards" },
   experience: { zh: "实习经历", en: "Internship" },
   projects: { zh: "项目经历", en: "Projects" },
-  campusActivities: { zh: "校园经历", en: "Campus Activities" },
+  campusActivities: { zh: "活动经历", en: "Activities" },
   skills: { zh: "技能特长", en: "Skills" },
 };
 

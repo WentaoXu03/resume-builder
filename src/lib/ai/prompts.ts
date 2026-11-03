@@ -13,7 +13,9 @@ RULES:
 7. Preserve existing data that the user did not ask to change — only modify relevant sections.
 8. The "proposedResumePatch" should be a partial ResumeData — only include sections you are modifying.
 9. Provide helpful "sectionNotes" explaining what you changed and why.
-10. Add "warnings" for anything the user should review carefully.`;
+10. Add "warnings" for anything the user should review carefully.
+11. Education entries contain school, degree, major, period, gpa, and description; omit the removed "courses" field. The optional "schoolTier" is "985" or "211"; only preserve explicitly provided values and never infer a designation from the school name.
+12. "campusActivities" represents general activities (活动经历), including activities outside campus.`;
 
 const MODE_INSTRUCTIONS: Record<AiResumeRequest['mode'], string> = {
   generate: `MODE: GENERATE

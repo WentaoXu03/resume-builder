@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ResumeData, TemplateName, AccentColor, SectionKey, SectionEmphasis, Education, Honor, Experience, Project, CampusActivity, ResearchExperience, SkillCategory } from '@/types';
-import { DEFAULT_RESUME_DATA, DEFAULT_SECTION_ORDER, DEFAULT_FONT_SCALE, FONT_SCALE_STEP, clampFontScale, DEFAULT_ACCENT_COLOR, normalizeAccentColor } from '@/types';
+import { DEFAULT_RESUME_DATA, DEFAULT_SECTION_ORDER, DEFAULT_FONT_SCALE, FONT_SCALE_STEP, clampFontScale, DEFAULT_ACCENT_COLOR, normalizeAccentColor, normalizeSchoolTier } from '@/types';
 import { DEMO_RESUME_DATA } from '@/lib/demoData';
 import { normalizeSectionOrder } from '@/lib/resume/sectionOrder';
 import { v4 as uuidv4 } from 'uuid';
@@ -123,11 +123,11 @@ export const useResumeStore = create<ResumeState>()(
             education: [...state.data.education, {
               id: uuidv4(),
               school: edu?.school ?? { zh: '', en: '' },
+              schoolTier: normalizeSchoolTier(edu?.schoolTier),
               degree: edu?.degree ?? { zh: '', en: '' },
               major: edu?.major ?? { zh: '', en: '' },
               period: edu?.period ?? '',
               gpa: edu?.gpa ?? '',
-              courses: edu?.courses ?? [],
               description: edu?.description ?? { zh: '', en: '' },
             }],
           },
@@ -317,8 +317,9 @@ export const useResumeStore = create<ResumeState>()(
           personalInfo: { ...DEFAULT_RESUME_DATA.personalInfo, ...data.personalInfo },
           education: (data.education || []).map((e: Partial<Education>) => ({
             id: e.id || uuidv4(), school: e.school || { zh: '', en: '' }, degree: e.degree || { zh: '', en: '' },
+            schoolTier: normalizeSchoolTier(e.schoolTier),
             major: e.major || { zh: '', en: '' }, period: e.period || '', gpa: e.gpa || '',
-            courses: e.courses || [], description: e.description || { zh: '', en: '' },
+            description: e.description || { zh: '', en: '' },
           })),
           honors: (data.honors || []).map((h: Partial<Honor>) => ({
             id: h.id || uuidv4(), title: h.title || { zh: '', en: '' }, level: h.level || '',
@@ -386,8 +387,9 @@ export const useResumeStore = create<ResumeState>()(
             personalInfo: { ...DEFAULT_RESUME_DATA.personalInfo, ...(d.personalInfo || {}) },
             education: (d.education || []).map((e: Partial<Education>) => ({
               id: e.id || uuidv4(), school: e.school || { zh: '', en: '' }, degree: e.degree || { zh: '', en: '' },
+              schoolTier: normalizeSchoolTier(e.schoolTier),
               major: e.major || { zh: '', en: '' }, period: e.period || '', gpa: migStr(e.gpa || ''),
-              courses: e.courses || [], description: migBi(e.description),
+              description: migBi(e.description),
             })),
             honors: (d.honors || []).map((h: Partial<Honor>) => ({
               id: h.id || uuidv4(), title: h.title || { zh: '', en: '' }, level: h.level || '',

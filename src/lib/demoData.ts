@@ -27,7 +27,6 @@ export const DEMO_RESUME_DATA: ResumeData = {
       major: { zh: "计算机科学与技术", en: "Computer Science & Technology" },
       period: "2020.09 - 2024.06",
       gpa: "**3.82/4.0 (前8%)**",
-      courses: ["数据结构与算法", "操作系统", "计算机网络", "数据库原理", "软件工程", "机器学习"],
       description: {
         zh: "主修计算机科学，GPA排名**前8%**，连续三年获校级奖学金",
         en: "Majoring in Computer Science, **top 8%** GPA, awarded university scholarship for three consecutive years",

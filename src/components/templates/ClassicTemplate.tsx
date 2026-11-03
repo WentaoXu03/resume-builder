@@ -13,6 +13,7 @@ import {
   LEADING,
   NUMERIC,
   PhotoSlot,
+  SchoolTierTag,
   SkillsGrid,
   createTypeScale,
   displayUrl,
@@ -44,7 +45,7 @@ interface TemplateProps {
  */
 const PAGE = { top: 28, right: 36, bottom: 26, left: 36 };
 const PHOTO = { width: 90, height: 124 };
-const BASE_SPACE = { section: 9, headToBody: 4, entry: 6, line: 1 };
+const BASE_SPACE = { section: 9, headToBody: 4, entry: 7.2, line: 3 };
 
 export function ClassicTemplate({ data, sectionOrder, emphasis, language, fontScale = 1, accentColor }: TemplateProps) {
   const t = (b: Parameters<typeof pickText>[0]) => pickText(b, language);
@@ -54,7 +55,7 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language, fontSc
     section: ts.sp(BASE_SPACE.section),
     headToBody: ts.sp(BASE_SPACE.headToBody),
     entry: ts.sp(BASE_SPACE.entry),
-    line: BASE_SPACE.line,
+    line: ts.fs(BASE_SPACE.line),
   };
 
   const normalizedSectionOrder = normalizeSectionOrder(sectionOrder);
@@ -95,7 +96,7 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language, fontSc
       items={(items ?? []).map(t)}
       markerColor={palette.marker}
       fontScale={fontScale}
-      style={{ ...bodyText, marginTop: SPACE.line }}
+      style={{ ...bodyText, marginTop: SPACE.line * 1.1 }}
     />
   );
 
@@ -162,11 +163,12 @@ export function ClassicTemplate({ data, sectionOrder, emphasis, language, fontSc
       <div>
         {sectionHead("education")}
         {data.education.map((edu, idx) => {
-          const meta = educationMeta(edu, language);
+          const meta = educationMeta(edu);
           return (
             <div key={edu.id} style={entryStyle(idx === data.education.length - 1)}>
               <EntryHeader
                 title={t(edu.school)}
+                titleSuffix={<SchoolTierTag value={edu.schoolTier} fontScale={fontScale} />}
                 subtitle={[t(edu.major), t(edu.degree)].filter(Boolean).join(" · ")}
                 date={edu.period}
                 fontScale={fontScale}

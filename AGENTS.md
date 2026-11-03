@@ -41,7 +41,7 @@ src/
 │   │   ├── ClassicTemplate.tsx  # 传统单栏，黑色分割线
 │   │   ├── ModernTemplate.tsx   # 双栏(30/70)，深色侧边栏，头像
 │   │   ├── MinimalTemplate.tsx  # 简约单栏，细线分割
-│   │   └── CompactTemplate.tsx  # 紧凑单栏，蓝色左侧条，亮点上限3条
+│   │   └── CompactTemplate.tsx  # 紧凑单栏，蓝色左侧条，完整展示所有亮点
 │   ├── export/
 │   │   └── ExportBar.tsx       # PDF/SVG/JSON导出 + 导入/示例/重置
 │   └── ui/                    # (空，预留)
@@ -71,7 +71,7 @@ infrastructure/
 ```typescript
 interface ResumeData {
   personalInfo: PersonalInfo;       // 含 BilingualText name/title/summary/location
-  education: Education[];           // school/degree/major 双语，period, gpa, courses
+  education: Education[];           // school/degree/major 双语，可选 schoolTier (985/211)，period, gpa
   honors: Honor[];                  // title双语, level(国家级/省级/校级), period
   experience: Experience[];         // company/role双语, highlights: BilingualText[]
   projects: Project[];              // name/role双语, tech: string[], link

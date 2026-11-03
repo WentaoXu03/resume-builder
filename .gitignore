@@ -49,3 +49,6 @@ next-env.d.ts
 
 # Local agent archive
 .ai/
+
+# Isolated Sites deployment checkout and build output
+/.sites-release/
