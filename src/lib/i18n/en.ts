@@ -63,7 +63,7 @@ export const en: Record<string, Record<string, string>> = {
   },
   avatar: {
     invalidType: 'Only JPG, PNG, or WebP images are supported.',
-    fileTooLarge: 'Image must be 5MB or smaller.',
+    fileTooLarge: 'Image must be 10MB or smaller.',
     readFailed: 'Could not read the image. Choose it again.',
     cropTitle: 'Crop Photo',
     cropDescription: 'Crop to a centered 3:4 portrait before saving it to this resume.',

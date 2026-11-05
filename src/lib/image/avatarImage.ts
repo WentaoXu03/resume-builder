@@ -1,8 +1,8 @@
 export const AVATAR_ACCEPTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
-export const AVATAR_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+export const AVATAR_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 export const AVATAR_CROP_ASPECT_RATIO = 3 / 4;
-export const AVATAR_OUTPUT_WIDTH = 360;
-export const AVATAR_OUTPUT_HEIGHT = 480;
+export const AVATAR_OUTPUT_WIDTH = 900;
+export const AVATAR_OUTPUT_HEIGHT = 1200;
 
 export function validateAvatarFile(file: File): string | null {
   if (!AVATAR_ACCEPTED_MIME_TYPES.includes(file.type as (typeof AVATAR_ACCEPTED_MIME_TYPES)[number])) {

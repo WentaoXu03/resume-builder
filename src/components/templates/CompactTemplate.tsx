@@ -44,7 +44,7 @@ interface TemplateProps {
  * Photo slot: compact 1-inch ID photo converted to A4 (80×110px).
  */
 const PAGE = { top: 22, right: 30, bottom: 20, left: 30 };
-const PHOTO = { width: 80, height: 110 };
+const PHOTO = { width: 96, height: 132 };
 const BASE_SPACE = { section: 7, headToBody: 4, entry: 6, line: 3 };
 const COMPACT_LEADING = 1.42;
 

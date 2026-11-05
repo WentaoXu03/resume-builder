@@ -39,7 +39,7 @@ interface TemplateProps {
  *
  * Photo slot: standard 1-inch ID photo converted to A4 sidebar (86×118px).
  */
-const PHOTO = { width: 86, height: 118 };
+const PHOTO = { width: 103, height: 142 };
 const MAIN_PAD = { top: 26, right: 28, bottom: 24, left: 26 };
 const BASE_SPACE = { section: 12, headToBody: 6, entry: 9.6, line: 3 };
 

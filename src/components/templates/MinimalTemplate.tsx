@@ -44,7 +44,7 @@ interface TemplateProps {
  * Photo slot: standard 1-inch ID photo converted to A4 (88×120px).
  */
 const PAGE = { top: 28, right: 36, bottom: 26, left: 36 };
-const PHOTO = { width: 88, height: 120 };
+const PHOTO = { width: 106, height: 144 };
 const BASE_GUTTER_PX = 88;
 const BASE_SPACE = { section: 10, entry: 8.4, line: 3 };
 

@@ -44,7 +44,7 @@ interface TemplateProps {
  * Photo slot: standard 1-inch ID photo converted to A4 (25×35mm ≈ 90×124px).
  */
 const PAGE = { top: 28, right: 36, bottom: 26, left: 36 };
-const PHOTO = { width: 90, height: 124 };
+const PHOTO = { width: 108, height: 149 };
 const BASE_SPACE = { section: 9, headToBody: 4, entry: 7.2, line: 3 };
 
 export function ClassicTemplate({ data, sectionOrder, emphasis, language, fontScale = 1, accentColor }: TemplateProps) {

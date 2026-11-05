@@ -70,6 +70,8 @@ export function ImageCropper({ imageDataUrl, language, onConfirm, onCancel }: Im
         sourceHeight - cropHeight,
       );
 
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
       context.drawImage(
         image,
         cropX,
@@ -82,7 +84,7 @@ export function ImageCropper({ imageDataUrl, language, onConfirm, onCancel }: Im
         AVATAR_OUTPUT_HEIGHT,
       );
 
-      onConfirm(canvas.toDataURL("image/jpeg", 0.9));
+      onConfirm(canvas.toDataURL("image/jpeg", 0.96));
     } catch (err) {
       console.error("Avatar crop failed:", err);
       setError(t("avatar.cropFailed"));

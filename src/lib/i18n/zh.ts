@@ -63,7 +63,7 @@ export const zh = {
   },
   avatar: {
     invalidType: '仅支持 JPG、PNG 或 WebP 图片。',
-    fileTooLarge: '图片不能超过 5MB。',
+    fileTooLarge: '图片不能超过 10MB。',
     readFailed: '读取图片失败，请重新选择。',
     cropTitle: '裁剪证件照',
     cropDescription: '按 3:4 比例居中裁剪，确认后写入当前简历。',
